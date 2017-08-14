@@ -1,7 +1,7 @@
 import sqlite3 as lite
 import sys
 
-with lite.connect('test.db') as con:
+with lite.connect('db/aliases.db') as con:
     print ("Creating aliases database...")
     cur = con.cursor()
     cur.execute("CREATE TABLE genes(Id INT, symbol TEXT, aliases TEXT)")

@@ -1,11 +1,2 @@
-#!/bin/bash
-
-# download new files
+echo "Creating new database..."
 python updater.py
-
-# extract them
-echo "extracting the files..."
-gunzip protein.gbk.gz
-
-echo "task completed..."
-
