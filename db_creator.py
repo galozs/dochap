@@ -1,7 +1,15 @@
-import Bio
+import sqlite3 as lite
+import sys
 
-from Bio import SeqIO
-with open("test.txt",'w') as fout:
-    for seq_record in SeqIO.parse("db/protein.gbk","genbank"):
-        sequence = seq_record.seq
-        fout.write(str(sequence) + "\n")   
+with lite.connect('test.db') as con:
+    print ("Creating aliases database...")
+    cur = con.cursor()
+    cur.execute("CREATE TABLE genes(Id INT, symbol TEXT, aliases TEXT)")
+    index=0
+    with open("aliases.txt","r") as aliases_file:
+        for gene_aliases in aliases_file.readlines():
+            for aliase in gene_aliases.split(";"):
+                if aliase != "" and aliase !="\n":
+                    cur.execute("INSERT INTO genes VALUES({0},'{1}','{2}')".format(index,aliase,gene_aliases))
+                    index +=1
+    print ("Aliases database created")
