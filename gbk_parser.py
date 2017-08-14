@@ -56,7 +56,7 @@ def write_aliases():
                 if "gene_synonym" in feature.qualifiers:
                     gene_aliases = feature.qualifiers["gene_synonym"][0]
                 if gene_name:
-                    aliases.add(gene_name + ":" + gene_aliases)
+                    aliases.add(gene_name + ";" + gene_aliases)
         for aliase in aliases:
             aliases_file.write(aliase +"\n")
 if __name__ == "__main__":
