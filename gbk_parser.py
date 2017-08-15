@@ -4,10 +4,20 @@ from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 from Bio.SeqFeature import SeqFeature, FeatureLocation
 from Bio import SeqIO
-
+import progressbar
 # get all sequence records from the gbk file
 gbk_file = "db/protein.gbk"
-records = [record for record in SeqIO.parse(gbk_file,"genbank")]
+#records = [record for record in SeqIO.parse(gbk_file,"genbank")]
+print ("parsing protein.gbk")
+records=[]
+# length as of 2016
+length = 76216
+p_bar = progressbar.AnimatedProgressBar(end=length,width=100)
+p_bar+1
+for record in SeqIO.parse(gbk_file,"genbank"):
+    records.append(record)
+    p_bar+1
+    p_bar.show_progress()
 
 # number of sequence records extracted
 print (len(records))
