@@ -1,0 +1,7 @@
+look at mrna_peptide in the prototpype folder.
+
+make sure db includes same information, or close to it.
+
+Look at the dochap.py in prototype, begin to emulate its work
+
+
