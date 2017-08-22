@@ -1,7 +1,7 @@
 import sqlite3 as lite
 import sys
 import gbk_parser
-
+import os
 records = gbk_parser.records
 
 def create_aliases_db():
@@ -20,29 +20,43 @@ def create_aliases_db():
         print ("Aliases database created")
 
 def create_comb_db():
+    os.remove('db/comb.db')
     with lite.connect('db/comb.db') as con:
         print("Creating database...")
         cur = con.cursor()
-        cur.execute("CREATE TABLE genes(Id INT, symbol TEXT,cds TEXT, sites TEXT, regions TEXT)")
+        cur.execute("CREATE TABLE genes(Id INT, symbol TEXT, db_xref TEXT, coded_by TEXT, chromosome TEXT,strain TEXT, cds TEXT, sites TEXT, regions TEXT)")
         for index,record in enumerate(records):
             sites=[]
             regions=[]
             cds = []
+            location = ""
             name =""
+            db_xref=""
+            coded_by =""
+            chromosome =""
+            strain = ""
             for feature in record.features:
-                if (feature.type == 'CDS'):
+                if feature.type == 'source':
+                    if 'strain' in feature.qualifiers:
+                        strain = feature.qualifiers['strain'][0]
+                    if 'chromosome' in feature.qualifiers:
+                        chromosome = feature.qualifiers['chromosome'][0]
+                if feature.type == 'CDS':
+                    cds.append(str(feature))
                     name=feature.qualifiers['gene'][0]
-                    cds.append(feature.qualifiers['coded_by'][0] + str(feature.location))
-                if (feature.type == 'Site'):
+                    coded_by = feature.qualifiers['coded_by'][0]
+                    db_xref = feature.qualifiers['db_xref'][0]
+                    location = str(feature.location)
+                if feature.type == 'Site':
                     sites.append(feature.qualifiers['site_type'][0]+str(feature.location))
-                if (feature.type == 'Region'):
+                if feature.type == 'Region':
                     regions.append(feature.qualifiers['region_name'][0]+str(feature.location))
             sites_comb = ','.join(sites)
             region_comb = ','.join(regions)
             cds_comb = ','.join(cds)
             if sites_comb == '' and sites_comb == '' and region_comb == '':
                 continue
-            cur.execute("INSERT INTO genes VALUES(?, ?, ?,?,?)",(index,name,cds_comb,sites_comb,region_comb))
+            cur.execute("INSERT INTO genes VALUES(?, ?, ?, ?, ?, ?,  ?, ?,?)",(index,name,db_xref,coded_by,chromosome,strain,cds_comb,sites_comb,region_comb))
             index+=1
 
 

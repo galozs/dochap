@@ -18,6 +18,7 @@ for record in SeqIO.parse(gbk_file,"genbank"):
     records.append(record)
     p_bar+1
     p_bar.show_progress()
+p_bar+length
 
 # number of sequence records extracted
 print (len(records))
