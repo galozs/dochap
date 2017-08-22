@@ -71,16 +71,5 @@ def write_aliases():
         for aliase in aliases:
             aliases_file.write(aliase +"\n")
 if __name__ == "__main__":
-    threads = []
-    t_1 = threading.Thread(target=write_annotations)
-    threads.append(t_1)
-    t_1.start()
     t_2 = threading.Thread(target=write_aliases)
-    threads.append(t_2)
     t_2.start()
-    t_3 = threading.Thread(target=write_sites)
-    threads.append(t_3)
-    t_3.start()
-    t_4 = threading.Thread(target=write_regions)
-    threads.append(t_4)
-    t_4.start() 

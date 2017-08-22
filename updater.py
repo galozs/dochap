@@ -34,10 +34,10 @@ if os.path.isfile(extract_path+"readme_old"):
         old_readme_lines = readme.readlines()
 with open(extract_path+"readme_new","r") as new_readme:
     new_readme_lines = new_readme.readlines()
-if new_readme_lines == old_readme_lines:
+if new_readme_lines == old_readme_lines and os.path.isfile(extract_path+"aliases.db") and os.path.isfile(extract_path+"comb.db"):
     print("database is up to date.")
     ftp.quit()
-else:
+elif not os.path.isfile(extract_path + 'protein.gbk'):
     print ("downloading " + filename + "...")
     ftp.sendcmd("TYPE i")
     archive_size = ftp.size(prot_path)
@@ -48,12 +48,10 @@ else:
             archive_progress + len(chunk)
             archive_progress.show_progress()
         ftp.retrbinary("RETR " + prot_path,callback)
-    archive_progress + archive_size
-    archive_progress.show_progress()
-    print()
-    print ("download complete.")
-    ftp.quit()
-    print ("starting database upgrade...")
-    subprocess.call(['./updater.sh'])
-
-    
+        archive_progress + archive_size
+        archive_progress.show_progress()
+        print()
+        print ("download complete.")
+        ftp.quit()
+print ("starting database upgrade...")
+subprocess.call(['./updater.sh'])

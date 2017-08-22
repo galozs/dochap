@@ -2,7 +2,28 @@ import sqlite3 as lite
 import sys
 import gbk_parser
 import os
+import threading
 records = gbk_parser.records
+
+def write_aliases():
+    print("writing aliases.txt")
+    with open("aliases.txt","w") as aliases_file:
+        aliases = set()
+        for record in records:
+            features = [feature for feature in record.features if feature.type == "CDS"]
+            for feature in features:
+                gene_aliases =""
+                gene_name =""
+                if "gene" in feature.qualifiers:
+                    gene_name = feature.qualifiers["gene"][0]
+                if "gene_synonym" in feature.qualifiers:
+                    gene_aliases = feature.qualifiers["gene_synonym"][0]
+                if gene_name:
+                    aliases.add(gene_name + ";" + gene_aliases)
+        for aliase in aliases:
+            aliases_file.write(aliase +"\n")
+
+
 
 def create_aliases_db():
     # create database of aliases
@@ -15,12 +36,11 @@ def create_aliases_db():
             for gene_aliases in aliases_file.readlines():
                 for aliase in gene_aliases.split(";"):
                     if aliase != "" and aliase !="\n":
-                        cur.execute("INSERT INTO genes VALUES({0},'{1}','{2}')".format(index,aliase,gene_aliases))
+                        cur.execute("INSERT INTO genes VALUES(?,?,?)",(index,aliase,gene_aliases))
                         index +=1
         print ("Aliases database created")
 
 def create_comb_db():
-    os.remove('db/comb.db')
     with lite.connect('db/comb.db') as con:
         print("Creating database...")
         cur = con.cursor()
@@ -61,4 +81,7 @@ def create_comb_db():
 
 
 if __name__ == "__main__":
-    create_comb_db()
+    t_1 = threading.Thread(target=create_comb_db)
+    t_1.start()
+    write_aliases()
+    create_aliases_db()
