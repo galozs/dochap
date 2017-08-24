@@ -8,6 +8,6 @@ echo "Deleting old database..."
 rm db/aliases.db -f
 rm db/comb.db -f
 python db_creator.py
-rm db/protein.gbk -f
+#rm db/protein.gbk -f
 echo "setup complete."
 
