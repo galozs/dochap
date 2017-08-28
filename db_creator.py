@@ -27,16 +27,25 @@ def write_aliases():
 
 def create_aliases_db():
     # create database of aliases
+    with open('db/aliases','r') as f:
+        aliases_lines = f.readlines()
+    values_keys = [tuple(line.replace('\n','').split('\t')) for line in aliases_lines]
+    zipped = [(key,value) for value,key in values_keys]
+    aliases_dict = dict(zipped)
     with lite.connect('db/aliases.db') as con:
         print ("Creating aliases database...")
         cur = con.cursor()
-        cur.execute("CREATE TABLE genes(Id INT, symbol TEXT, aliases TEXT)")
+        cur.execute("CREATE TABLE genes(Id INT, symbol TEXT, aliases TEXT, transcript_id TEXT)")
         index=0
         with open("aliases.txt","r") as aliases_file:
             for gene_aliases in aliases_file.readlines():
-                for aliase in gene_aliases.split(";"):
-                    if aliase != "" and aliase !="\n":
-                        cur.execute("INSERT INTO genes VALUES(?,?,?)",(index,aliase,gene_aliases))
+                for alias in gene_aliases.split(";"):
+                    if alias != "" and alias !="\n":
+                        for name in gene_aliases.split(";"):
+                            transcript_id = aliases_dict.get(name,'')
+                            if transcript_id != '':
+                                break
+                        cur.execute("INSERT INTO genes VALUES(?,?,?,?)",(index,alias,gene_aliases,transcript_id))
                         index +=1
         print ("Aliases database created")
 
