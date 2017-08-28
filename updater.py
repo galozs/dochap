@@ -15,7 +15,10 @@ ftp.login()
 readme_size = ftp.size(readme_file)
 
 readme_progress = progressbar.AnimatedProgressBar(end=readme_size,width=20)
-
+if os.path.isfile(extract_path + "readme_old"):
+    print("readme_old found, checking againts existing database...")
+else:
+    print("readme_old not found, downloading new database...")
 print ("downloading readme_file...")
 with open(extract_path+"readme_new",'w') as f:
     def callback(chunk):
