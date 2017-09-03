@@ -1,8 +1,9 @@
 import sqlite3 as lite
 import sys
-import gbk_parser
 import os
 import threading
+import gbk_parser
+import ucsc_parser
 records = gbk_parser.records
 
 def write_aliases():
@@ -27,9 +28,9 @@ def write_aliases():
 
 def create_aliases_db():
     # create database of aliases
-    with open('db/aliases','r') as f:
+    with open('db/transcript_aliases.txt','r') as f:
         aliases_lines = f.readlines()
-    values_keys = [tuple(line.replace('\n','').split('\t')) for line in aliases_lines]
+    values_keys = [tuple(line.replace('\n','').split('\\t')) for line in aliases_lines]
     zipped = [(key,value) for value,key in values_keys]
     aliases_dict = dict(zipped)
     with lite.connect('db/aliases.db') as con:
@@ -48,6 +49,28 @@ def create_aliases_db():
                         cur.execute("INSERT INTO genes VALUES(?,?,?,?)",(index,alias,gene_aliases,transcript_id))
                         index +=1
         print ("Aliases database created")
+
+def create_transcript_data_db():
+    print ("Creating transcript data db...")
+    with lite.connect('db/transcript_data.db') as con:
+        names = ucsc_parser.parse_knownGene(ucsc_parser.knownGene_path)
+        cur = con.cursor()
+        cur.execute("CREATE TABLE transcripts(name TEXT,\
+                    chrom TEXT,\
+                    strand TEXT,\
+                    tx_start TEXT,\
+                    tx_end TEXT,\
+                    cds_start TEXT,\
+                    cds_end TEXT,\
+                    exon_count TEXT,\
+                    exon_starts TEXT,\
+                    exon_ends TEXT,\
+                    protein_id TEXT,\
+                    align_id TEXT)")
+
+        for name in names:
+            values = tuple(names[name].values())
+            cur.execute("INSERT INTO transcripts VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",values)
 
 def create_comb_db():
     with lite.connect('db/comb.db') as con:
@@ -94,3 +117,4 @@ if __name__ == "__main__":
     t_1.start()
     write_aliases()
     create_aliases_db()
+    create_transcript_data_db()
