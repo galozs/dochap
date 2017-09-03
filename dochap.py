@@ -1,4 +1,4 @@
-
+import sys
 '''
 DOCHAP (DOmain CHAnge Predictor) takes the data file containing the domain information made in Matlab and a gtf file from an
 experiment. The domain Data file name will go in the loadData function and the user experiment file name will go in the
@@ -130,9 +130,18 @@ def loadData(datafile):
         if domains[0][1] != '' or domains[1][1] != '':
             dataLine.extend((stline[3], stline[1], stline[19][:-2], domains, exons))
             data.append(dataLine)
+    print(data[:5])
     return data
 
+# needs to be done once for every upgrade of db
+# after one use should add to db the new data
 def assignDomainsToExons():
+    # built from
+    # 0.symbol
+    # 1.np_1131311
+    # 2.id
+    # 3.[domains]
+    # 4.[exon loc pairs]
     for transcript in data:
         relativeStart = 1
         relativeStop = 0
@@ -146,18 +155,24 @@ def assignDomainsToExons():
                         domainNum = domain[0]
                         domainStart = int(domain[1])*3 -2
                         domainStop = int(domain[2])*3
+                        # if domain start inside relative
+                        # or if domain end inside relative
+                        # add domain number to domainList of the exon
                         if (relativeStart <= domainStart and domainStart <= relativeStop) or\
                               (relativeStart <= domainStop and domainStop <= relativeStop):
                             domainList.append(domainNum)
+                # add the domain list to the exon data
                 exon.append(domainList)
                 relativeStart = relativeStop + 1
-
 
 def assignDomainsToUExon(uTranscript):
     uTranscriptName = uTranscript[1]
     newUTranscript = []
     for transcript in data:
         transcriptName = transcript[2]
+        # if the transcript have the same id
+        # terrible way of finding matches
+        # should be done in sql query for the transcript id
         if uTranscriptName == transcriptName:
             uExons = uTranscript[2]
             exons = transcript[4]
@@ -169,8 +184,12 @@ def assignDomainsToUExon(uTranscript):
                         exonStart = exon[0]
                         exonStop = exon[1]
                         exonDomains = exon[2]
+                        # if the exon from user transcript contains all of the exon from the db
                         if uExonStart <= exonStart and exonStop <= uExonStop:
+                            # tell the user exon that is contains the domains of the db exon
                             uExon.append(exonDomains)
+            # add a new tuple of the user transcript data with new exonDomains information
+            # to a new list
             newUTranscript.extend((uTranscript[0], uTranscript[1], transcript[3], uTranscript[2]))
             break
     return newUTranscript
@@ -178,6 +197,7 @@ def assignDomainsToUExon(uTranscript):
 def makeOutputFile(fileName):
     with open(fileName, "w") as f:
         for uTranscript in userTranscripts:
+            # get user exons data for every transcript
             newUTranscript = assignDomainsToUExon(uTranscript)
             if newUTranscript != []:
                 uTranscript = newUTranscript
