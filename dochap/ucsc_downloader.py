@@ -46,14 +46,14 @@ params = {
 
 
 def get_transcript_data():
-    print ("Downloading {} table...".format(params2['hgta_table'))
+    print ("Downloading {} table...".format(params2['hgta_table']))
     response = session.post(url, data=params2)
     raw_data = str(response.content)
     return raw_data
 
 
 def get_transcript_aliases():
-    print ("Downloading {} table...".format(params['hgta_table'))
+    print ("Downloading {} table...".format(params['hgta_table']))
     response = session.post(url,data = params)
     raw_data = str(response.content)
     return raw_data

@@ -1,5 +1,0 @@
-Look at the dochap.py in prototype, begin to emulate its work
-
-Look at the gtf file and compare while reading dochap.py 
-
-** missing exons start and end locations
