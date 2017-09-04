@@ -10,14 +10,13 @@ domains_db = 'db/domains.db'
 alias_db = 'db/aliases.db'
 comb_db = 'db/comb.db'
 transcripts_db = 'db/transcript_data.db'
-
+num_threads = 4
 bar = 0
 # run on all transcripts in transcripts.db
 # for each one find matching alias in alias.db
 # use alias to find sites and regions data in comb.db
 # get all domains of a transcript
 def get_domains(transcript_id):
-    print("getting domains of: {}".format(transcript_id))
     with lite.connect(alias_db) as con:
         cursor = con.cursor()
         cursor.execute("SELECT aliases from genes WHERE transcript_id = ?",(transcript_id,))
@@ -49,6 +48,8 @@ def get_domains(transcript_id):
                         domain['start'] = part_two[0]
                         domain['end'] = part_two[1]
                         domain['index'] = len(domain_list)
+                        if not str.isdigit(domain['start']) or not str.isdigit(domain['end']):
+                                continue
                         domain_list.append(domain)
                 return domain_list
 
@@ -85,6 +86,9 @@ def assignDomainsToExons(transcript_id,domains):
         if domains == None:
             return
         for domain in domains:
+            if (not str.isdigit(domain['start'])):
+                print ("FUCKING FAILED ON {} domain is: {}".format(transcript_id,domain))
+                sys.exit(2)
             dom_start = int(domain['start']) * 3 - 2
             dom_stop = int(domain['end']) * 3
             #print('start {} end {}'.format(dom_start,dom_stop))
@@ -111,7 +115,7 @@ def assign_and_get(name):
 def write_to_db(data):
     # write all domains in exons to db
     # data is build [(id,index,[domains_nums]),...]
-    print(data)
+    print('writing to db/domains.db...')
     with lite.connect(domains_db) as con:
         cursor = con.cursor()
         cursor.executescript("drop table if exists domains;")
@@ -124,19 +128,21 @@ def main():
     #print(get_domains('uc007aeu.1'))
     #print(get_domains('uc012gqd.1'))
     #print(get_domains('uc007afi.2'))
+    print("loading data...")
     with lite.connect(alias_db) as con:
         cursor = con.cursor()
-        cursor.execute("SELECT transcript_id from genes")
+        cursor.execute("SELECT DISTINCT transcript_id from genes")
         result = cursor.fetchall()
     names = [value[0] for value in result]
     # give this thing a progress bar
     global bar
     bar = progressbar.AnimatedProgressBar(end=len(names),width=20)
-    pool = ThreadingPool(4)
+    pool = ThreadingPool(num_threads)
     result = pool.amap(assign_and_get,names)
     while True:
         if result.ready():
             break
+        bar.show_progress()
         time.sleep(1)
     data = list(result.get())
     # dark magic incoming
