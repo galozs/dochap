@@ -13,5 +13,8 @@ rm db/aliases.db -f
 rm db/comb.db -f
 python db_creator.py
 #rm db/protein.gbk -f
+echo "assigning domains to exons..."
+# add column to db
+
 echo "Setup complete."
 
