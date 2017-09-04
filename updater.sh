@@ -15,6 +15,6 @@ python db_creator.py
 #rm db/protein.gbk -f
 echo "assigning domains to exons..."
 # add column to db
-
+python domains_to_exons.py
 echo "Setup complete."
 
