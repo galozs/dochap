@@ -136,7 +136,7 @@ def main():
     names = [value[0] for value in result]
     # give this thing a progress bar
     global bar
-    bar = progressbar.AnimatedProgressBar(end=len(names),width=20)
+    bar = progressbar.AnimatedProgressBar(end=len(names),width=10)
     pool = ThreadingPool(num_threads)
     result = pool.amap(assign_and_get,names)
     while True:
