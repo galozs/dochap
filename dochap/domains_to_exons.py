@@ -10,19 +10,24 @@ domains_db = 'db/domains.db'
 alias_db = 'db/aliases.db'
 comb_db = 'db/comb.db'
 transcripts_db = 'db/transcript_data.db'
-num_threads = 4
+num_threads = 1
 bar = 0
 # run on all transcripts in transcripts.db
 # for each one find matching alias in alias.db
 # use alias to find sites and regions data in comb.db
 # get all domains of a transcript
 def get_domains(transcript_id):
+    # use better aliases
+    alias_db = 'db/better_aliases.db'
     with lite.connect(alias_db) as con:
         cursor = con.cursor()
-        cursor.execute("SELECT aliases from genes WHERE transcript_id = ?",(transcript_id,))
-        data = cursor.fetchone()
+        cursor.execute("SELECT name from aliases WHERE transcript_id = ?",(transcript_id,))
+        #cursor.execute("SELECT aliases from genes WHERE transcript_id = ?",(transcript_id,))
+        data = cursor.fetchall()
         if data:
-            aliases = data[0].split(';')
+            # create a list of the aliases
+            aliases = list(set([tup[0] for tup in data]))
+            #aliases = data[0].split(';')
         else:
             return None
     with lite.connect(comb_db) as con:
@@ -31,11 +36,13 @@ def get_domains(transcript_id):
             cursor.execute("SELECT sites,regions from genes WHERE symbol = ?",(alias,))
             results = cursor.fetchall()
             domain_list = []
+            print('result for {} alias {} is:\n{}'.format(transcript_id,alias,results))
             if results:
                 for domains in results[0]:
                     splitted = domains.split(',')
                     for result in splitted:
                         if '[' not in result:
+                            print('bad result for {} alias {} result:\n'.format(transcript_id,alias,result))
                             continue
                         modified = result.replace(',',':')
                         part_one = '['.join(modified.split('[')[:-1])
@@ -43,15 +50,20 @@ def get_domains(transcript_id):
                         domain = {}
                         # check that line is not empty
                         if not modified[0]:
+                            print('bad modified for {} alias {} modified:\n'.format(transcript_id,alias,modified))
                             continue
                         domain['name'] = part_one
                         domain['start'] = part_two[0]
                         domain['end'] = part_two[1]
                         domain['index'] = len(domain_list)
                         if not str.isdigit(domain['start']) or not str.isdigit(domain['end']):
-                                continue
+                            print('bad strings in domain for {} alias {} domain:\n'.format(transcript_id,alias,domain))
+                            continue
                         domain_list.append(domain)
+                print('found for {} alias {} doms list:\n{}'.format(transcript_id,alias,domain_list))
                 return domain_list
+            else:
+                print('found no sites or regions for {} alias {}'.format(transcript_id,alias))
 
 
 def get_exons(result):
@@ -129,11 +141,11 @@ def main():
     #print(get_domains('uc012gqd.1'))
     #print(get_domains('uc007afi.2'))
     print("loading data...")
-    with lite.connect(alias_db) as con:
+    with lite.connect('db/better_aliases.db') as con:
         cursor = con.cursor()
-        cursor.execute("SELECT DISTINCT transcript_id from genes")
+        cursor.execute("SELECT DISTINCT transcript_id from aliases")
         result = cursor.fetchall()
-    names = [value[0] for value in result]
+    names = [value[0] for value in result[100:110]]
     # give this thing a progress bar
     global bar
     bar = progressbar.AnimatedProgressBar(end=len(names),width=10)

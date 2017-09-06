@@ -24,6 +24,18 @@ def write_aliases():
         for aliase in aliases:
             aliases_file.write(aliase +"\n")
 
+def create_better_aliases_db():
+    with open('db/transcript_aliases.txt','r') as f:
+        aliases_lines = f.readlines()
+
+    values_keys = [tuple(line.replace('\n','').split('\\t')) for line in aliases_lines]
+    zipped = [(key,value) for value,key in values_keys]
+    # write pairs to db
+    with lite.connect('db/better_aliases.db') as con:
+        cursor = con.cursor()
+        cursor.executescript("drop table if exists aliases;")
+        cursor.execute("CREATE TABLE aliases (name TEXT, transcript_id TEXT)")
+        cursor.executemany('INSERT INTO aliases VALUES(?,?)',zipped)
 
 
 def create_aliases_db():
@@ -106,13 +118,15 @@ def create_comb_db():
             sites_comb = ','.join(sites)
             region_comb = ','.join(regions)
             cds_comb = ','.join(cds)
-            if sites_comb == '' and sites_comb == '' and region_comb == '':
+            if cds_comb == '' and sites_comb == '' and region_comb == '':
                 continue
             cur.execute("INSERT INTO genes VALUES(?, ?, ?, ?, ?, ?,  ?, ?,?)",(index,name,db_xref,coded_by,chromosome,strain,cds_comb,sites_comb,region_comb))
             index+=1
 
 
 if __name__ == "__main__":
+    create_better_aliases_db()
+    sys.exit(2)
     t_1 = threading.Thread(target=create_comb_db)
     t_1.start()
     write_aliases()
