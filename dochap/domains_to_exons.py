@@ -10,7 +10,7 @@ domains_db = 'db/domains.db'
 alias_db = 'db/aliases.db'
 comb_db = 'db/comb.db'
 transcripts_db = 'db/transcript_data.db'
-num_threads = 1
+num_threads = 8
 bar = 0
 # run on all transcripts in transcripts.db
 # for each one find matching alias in alias.db
@@ -36,13 +36,13 @@ def get_domains(transcript_id):
             cursor.execute("SELECT sites,regions from genes WHERE symbol = ?",(alias,))
             results = cursor.fetchall()
             domain_list = []
-            print('result for {} alias {} is:\n{}'.format(transcript_id,alias,results))
+            #print('result for {} alias {} is:\n{}'.format(transcript_id,alias,results))
             if results:
                 for domains in results[0]:
                     splitted = domains.split(',')
                     for result in splitted:
                         if '[' not in result:
-                            print('bad result for {} alias {} result:\n'.format(transcript_id,alias,result))
+                            #print('bad result for {} alias {} result:\n'.format(transcript_id,alias,result))
                             continue
                         modified = result.replace(',',':')
                         part_one = '['.join(modified.split('[')[:-1])
@@ -50,21 +50,31 @@ def get_domains(transcript_id):
                         domain = {}
                         # check that line is not empty
                         if not modified[0]:
-                            print('bad modified for {} alias {} modified:\n'.format(transcript_id,alias,modified))
+                            #print('bad modified for {} alias {} modified:\n'.format(transcript_id,alias,modified))
                             continue
                         domain['name'] = part_one
                         domain['start'] = part_two[0]
                         domain['end'] = part_two[1]
                         domain['index'] = len(domain_list)
                         if not str.isdigit(domain['start']) or not str.isdigit(domain['end']):
-                            print('bad strings in domain for {} alias {} domain:\n'.format(transcript_id,alias,domain))
+                            #print('bad strings in domain for {} alias {} domain:\n'.format(transcript_id,alias,domain))
                             continue
                         domain_list.append(domain)
-                print('found for {} alias {} doms list:\n{}'.format(transcript_id,alias,domain_list))
+                #print('found for {} alias {} doms list:\n{}'.format(transcript_id,alias,domain_list))
                 return domain_list
             else:
-                print('found no sites or regions for {} alias {}'.format(transcript_id,alias))
+                pass
+                #print('found no sites or regions for {} alias {}'.format(transcript_id,alias))
 
+def get_exons_by_transcript_id(transcript_id):
+    with lite.connect(transcripts_db) as con:
+        con.row_factory = lite.Row
+        cursor = con.cursor()
+        cursor.execute("SELECT * FROM transcripts WHERE name = ?",(transcript_id,))
+        # currently use the first result only (there shouldnt be more then one)
+        result = cursor.fetchone()
+    exons = get_exons(result)
+    return exons
 
 def get_exons(result):
     exons =[]
@@ -99,7 +109,7 @@ def assignDomainsToExons(transcript_id,domains):
             return
         for domain in domains:
             if (not str.isdigit(domain['start'])):
-                print ("FUCKING FAILED ON {} domain is: {}".format(transcript_id,domain))
+                #print ("FUCKING FAILED ON {} domain is: {}".format(transcript_id,domain))
                 sys.exit(2)
             dom_start = int(domain['start']) * 3 - 2
             dom_stop = int(domain['end']) * 3
@@ -127,7 +137,7 @@ def assign_and_get(name):
 def write_to_db(data):
     # write all domains in exons to db
     # data is build [(id,index,[domains_nums]),...]
-    print('writing to db/domains.db...')
+    #print('writing to db/domains.db...')
     with lite.connect(domains_db) as con:
         cursor = con.cursor()
         cursor.executescript("drop table if exists domains;")
@@ -145,7 +155,7 @@ def main():
         cursor = con.cursor()
         cursor.execute("SELECT DISTINCT transcript_id from aliases")
         result = cursor.fetchall()
-    names = [value[0] for value in result[100:110]]
+    names = [value[0] for value in result]
     # give this thing a progress bar
     global bar
     bar = progressbar.AnimatedProgressBar(end=len(names),width=10)

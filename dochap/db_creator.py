@@ -48,6 +48,7 @@ def create_aliases_db():
     with lite.connect('db/aliases.db') as con:
         print ("Creating aliases database...")
         cur = con.cursor()
+        cur.executescript("drop table if exists genes;")
         cur.execute("CREATE TABLE genes(Id INT, symbol TEXT, aliases TEXT, transcript_id TEXT)")
         index=0
         with open("aliases.txt","r") as aliases_file:
@@ -67,6 +68,7 @@ def create_transcript_data_db():
     with lite.connect('db/transcript_data.db') as con:
         names = ucsc_parser.parse_knownGene(ucsc_parser.knownGene_path)
         cur = con.cursor()
+        cur.executescript("drop table if exists transcripts;")
         cur.execute("CREATE TABLE transcripts(name TEXT,\
                     chrom TEXT,\
                     strand TEXT,\
@@ -88,6 +90,7 @@ def create_comb_db():
     with lite.connect('db/comb.db') as con:
         print("Creating database...")
         cur = con.cursor()
+        cur.execute("drop table if exists genes;")
         cur.execute("CREATE TABLE genes(Id INT, symbol TEXT, db_xref TEXT, coded_by TEXT, chromosome TEXT,strain TEXT, cds TEXT, sites TEXT, regions TEXT)")
         for index,record in enumerate(records):
             sites=[]
@@ -118,17 +121,15 @@ def create_comb_db():
             sites_comb = ','.join(sites)
             region_comb = ','.join(regions)
             cds_comb = ','.join(cds)
-            if cds_comb == '' and sites_comb == '' and region_comb == '':
+            if sites_comb == '' and region_comb == '':
                 continue
             cur.execute("INSERT INTO genes VALUES(?, ?, ?, ?, ?, ?,  ?, ?,?)",(index,name,db_xref,coded_by,chromosome,strain,cds_comb,sites_comb,region_comb))
             index+=1
 
 
 if __name__ == "__main__":
+    create_comb_db()
     create_better_aliases_db()
-    sys.exit(2)
-    t_1 = threading.Thread(target=create_comb_db)
-    t_1.start()
-    write_aliases()
-    create_aliases_db()
     create_transcript_data_db()
+    sys.exit(2)
+    
