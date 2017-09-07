@@ -77,6 +77,9 @@ def get_exons_by_transcript_id(transcript_id):
     return exons
 
 def get_exons(result):
+    if not result:
+        #print('nothing in result')
+        return
     exons =[]
     starts = result['exon_starts'].split(',')
     ends = result['exon_ends'].split(',')
