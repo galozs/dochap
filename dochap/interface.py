@@ -1,7 +1,7 @@
 import os
 import progressbar
 import sys
-import domains_to_exons 
+import domains_to_exons
 import sqlite3 as lite
 
 transcript_db = 'db/transcript_data.db'
@@ -9,8 +9,7 @@ domains_db = 'db/domains.db'
 
 def parse_gtf(file_path):
     with open(file_path) as f:
-        lines = f.readlines()
-    # dictionary of exons by transcript_id
+        lines = f.readlines()    # dictionary of exons by transcript_id
     transcripts = {}
     transcript_id_prev = ''
     gene_id_prev = ''
@@ -55,7 +54,13 @@ def parse_gtf(file_path):
 
 # checks if u_exon contains the exon inside itself
 def exon_contained(u_exon,exon):
-    if u_exon['start'] <= exon['start'] and u_exon['end'] >= exon['end']:
+    #print('\nu_exon: ', u_exon,'\nexon: ',exon)
+    #print('u_exno is: {} exon is: {}'.format((u_exon['start'],u_exon['end']),(exon['start'],exon['end'])))
+    if u_exon['start']-1 <= exon['start']:
+        pass#print('start is smaller')
+    if u_exon['end'] >= exon['end']:
+        pass#print('end is larger')
+    if u_exon['start']-1 <= exon['start'] and u_exon['end'] >= exon['end']:
         return True
     return False
 
@@ -67,6 +72,9 @@ def get_exon_domains(exon):
         result = cursor.fetchone()
     #print('domains: {}'.format(result))
     if not result:
+       return None
+    doms = result[0].split(',')
+    return doms
 
 
 # usage: call when need to know what domains an exon contains
@@ -83,18 +91,22 @@ def assign_gtf_domains_to_exons(u_transcript_id, u_exons):
         return None
     # first extract all the domains so they are not extracted everytime
     exons_domains = list(map(get_exon_domains,exons))
+    if not exons_domains:
+        return u_exons
+    #print('exons_doms: {}'.format(exons_domains))
     for u_exon in u_exons:
         # u_exons[domains] will be a set of strings
         u_exon['domains'] = set()
         for exon in exons:
             exon_domains = exons_domains[exon['index']]
             if exon_contained(u_exon,exon):
+                # skip empty exons(no domains inside them)
+                if not exon_domains:
+                    continue
                 u_exon['domains'].update(exon_domains)
-                print(exon_domains)
-                print(u_exon['domains'])
+                #print(exon_domains)
+                #print(u_exon['domains'])
     # exons now have domains data
-    for u_exon in u_exons:
-        pass    #print(u_exon['domains'])
     return u_exons
 
 
@@ -123,6 +135,9 @@ def main():
                 f.write('None\n')
                 continue
             for e in exons:
+                doms =  str(e['domains'])
+                if doms == 'set()' or doms == "{''}":
+                    e['domains'] = 'None'
                 f.write('index: {} domains: {}\n'.format(e['index'],str(e['domains'])))
 
     print()
