@@ -30,7 +30,7 @@ def parse_gtf(file_path):
             exon['exon_starts'] = exon['cds']['start']
             exon['end'] = exon['cds']['end']
             exon['exon_ends'] = exon['cds']['end']
-            exon['index'] = len(exons)
+            exon['index'] = int(splitted[8].split('"')[5])
             # add one to the length
             exon['cds']['length'] = abs(exon['cds']['end'] - exon['cds']['start']) + 1
             # increment relative start location
