@@ -38,7 +38,9 @@ def get_domains(transcript_id):
             domain_list = []
             #print('result for {} alias {} is:\n{}'.format(transcript_id,alias,results))
             if results:
-                for domains in results[0]:
+                # if counter is 0, domain type is site, if counter is 1, domain type is region
+                domain_types = ['site','region']
+                for counter,domains in enumerate(results[0]):
                     splitted = domains.split(',')
                     for result in splitted:
                         if '[' not in result:
@@ -52,6 +54,7 @@ def get_domains(transcript_id):
                         if not modified[0]:
                             #print('bad modified for {} alias {} modified:\n'.format(transcript_id,alias,modified))
                             continue
+                        domain['type'] = domain_types[counter]
                         domain['name'] = part_one
                         domain['start'] = part_two[0]
                         domain['end'] = part_two[1]
@@ -103,9 +106,15 @@ def assignDomainsToExons(transcript_id,domains):
         # currently use the first result only (there shouldnt be more then one)
         result = cursor.fetchone()
     exons = get_exons(result)
+    # TODO
+    # next statement might not be accurate
+    # i dont know from what each domain relative location is relative to
     relative_start = 1
     relative_stop = 0
     for exon in exons:
+        # domains indexes will be used as strings
+        # states will be start,end,contains,contained
+        exon['domains_states'] = {}
         relative_stop = relative_start + exon['length']
         domains_in_exon = []
         if domains == None:
@@ -116,14 +125,61 @@ def assignDomainsToExons(transcript_id,domains):
                 sys.exit(2)
             dom_start = int(domain['start']) * 3 - 2
             dom_stop = int(domain['end']) * 3
-            #print('start {} end {}'.format(dom_start,dom_stop))
-            #print ('relative start {} relative end {}'.format(relative_start,relative_stop))
-            dom_start_in = relative_start <= dom_start and dom_start <= relative_stop
-            dom_end_in = relative_start <= dom_stop and dom_stop <= relative_stop
-            if dom_start_in or dom_end_in:
+
+            # create ranges of numbers that represents the domain and exon ranges
+            if dom_start < dom_stop:
+                dom_range = range(dom_start,dom_stop+1)
+            else:
+                dom_range = range(dom_stop,dom_start+1)
+
+            exon_range = set(range(relative_start,relative_stop+1))
+            intersection = exon_range.intersection(dom_range)
+
+            dom_start_in_exon = False
+            dom_end_in_exon = False
+
+            if not intersection:
+                # empty, no overlap
+                continue
+
+            
+            if dom_start in intersection:
+                # exon start location in domain
+                # domain is atleast partialy on exon
+                dom_start_in_exon = True
+
+            if dom_stop in intersection:
+                # exon end location in domain
+                # domain is atleast partialy on exon
+                dom_end_in_exon = True
+
+            dom_index = str(domain['index'])
+            if dom_end_in_exon and dom_start_in_exon:
+                # domain fully in exon
+                exon['domains_states'][dom_index] = 'contained'
                 domains_in_exon.append(domain)
+                continue
+            if dom_start_in_exon:
+                exon['domains_states'][dom_index] = 'start'
+                domains_in_exon.append(domain)
+                continue
+            if dom_end_in_exon:
+                exon['domains_states'][dom_index] = 'end'
+                domains_in_exon.append(domain)
+                continue
+            # there is an intersection but dom_start and dom_end not in it
+            # that means that the domain contains the exon
+            exon['domains_states'][dom_index] = 'contains'
+            domains_in_exon.append(domain)
+            continue
+
+            #dom_start_in = relative_start <= dom_start and dom_start <= relative_stop
+            #dom_end_in = relative_start <= dom_stop and dom_stop <= relative_stop
+
+            #if dom_start_in or dom_end_in:
+            #    domains_in_exon.append(domain)
         nums = [domain['index'] for domain in domains_in_exon]
-        exon['domains'] = nums
+        exon['domains'] = domains_in_exon
         relative_start = relative_stop + 1
     return exons
 
@@ -144,8 +200,8 @@ def write_to_db(data):
     with lite.connect(domains_db) as con:
         cursor = con.cursor()
         cursor.executescript("drop table if exists domains;")
-        cursor.execute("CREATE TABLE domains(transcript_id TEXT, exon_index INT, domains_list TEXT)")
-        cursor.executemany("INSERT INTO domains VALUES(?,?,?)",data)
+        cursor.execute("CREATE TABLE domains(transcript_id TEXT, exon_index INT,domains_states TEXT, domains_list TEXT)")
+        cursor.executemany("INSERT INTO domains VALUES(?,?,?,?)",data)
 
 
 
@@ -173,7 +229,7 @@ def main():
     # dark magic incoming
     # flatten the list
     # make it a list of tuples of id,index,domainlist
-    data = [(exon['transcript_id'],exon['index'],','.join((list(map(str,exon['domains']))))) for exons in data if exons != None for exon in exons if exon != None]
+    data = [(exon['transcript_id'],exon['index'],str(exon['domains_states']),','.join((list(map(str,exon['domains']))))) for exons in data if exons != None for exon in exons if exon != None]
     #ids = [tup[0] for tup in data]
     #indexes = [tup[1] for tup in data]
     #domains = [tup[2] for tup in data]
