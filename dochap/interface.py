@@ -1,4 +1,5 @@
 import os
+import json
 import progressbar
 import sys
 import domains_to_exons
@@ -52,21 +53,23 @@ def parse_gtf(file_path):
     # maybe not
     return transcripts
 
+
+compare_stats = {'start':0,'end':0,'full':0,'partial':0,'none':0}
 # checks if u_exon contains the exon inside itself
 def compare_exons(u_exon,exon):
     # need to be changed massivly TODO
     # check for every domain inside exon
     domains_in_exon = []
+    u_exon['domains_states'] = {}
     for domain in exon['domains']:
         # do same test as in domains_to_exon.py
         # just on actual location instead of relatives
         # TODO THIS MIGHT NOT MAKE SENSE - WHAT IS ADDED 
         # TO START OF DOMAIN? IS IT EXON?
         # MIGHT NEED TO ADD 1 TO START?
-        print('domain is: ',domain)
         total_start = int(domain['start']) + exon['start']
         total_end = int(domain['end']) + exon['end']
-        dom_range = range(total_start,total_stop+1)
+        dom_range = range(total_start,total_end+1)
 
         if u_exon['start'] > u_exon['end']:
             u_exon_range = set(range(u_exon['end'],u_exon['start']+1))
@@ -77,38 +80,39 @@ def compare_exons(u_exon,exon):
         dom_start_in_exon = False
         dom_end_in_exon = False
         if not intersection:
-            # empty, no overlap
+            compare_stats['none']+=1
             continue
 
-        if dom_start in intersection:
+        if total_start in intersection:
             # exon start location in domain
             # domain is atleast partialy on exon
             dom_start_in_exon = True
 
-        if dom_stop in intersection:
-            # exon end location in domain
+        if total_end in intersection:
             # domain is atleast partialy on exon
             dom_end_in_exon = True
 
+        # dom_index is string because its a key in domains_states dict
         dom_index = str(domain['index'])
         if dom_end_in_exon and dom_start_in_exon:
-            # domain fully in exon
+            compare_stats['full'] +=1
             u_exon['domains_states'][dom_index] = 'contained'
             domains_in_exon.append(domain)
             continue
         if dom_start_in_exon:
-            U_exon['domains_states'][dom_index] = 'start'
+            compare_stats['start']+=1
+            u_exon['domains_states'][dom_index] = 'start'
             domains_in_exon.append(domain)
             continue
         if dom_end_in_exon:
+            compare_stats['end'] +=1
             u_exon['domains_states'][dom_index] = 'end'
             domains_in_exon.append(domain)
             continue
+        compare_stats['partial']+=1
         u_exon['domains_states'][dom_index] = 'contains'
         domains_in_exon.append(domain)
         continue
-    return
-
     u_exon['domains'] = domains_in_exon
     if u_exon['domains_states'] == exon['domains_states']:
         if u_exon['domains'] == exon['domains']:
@@ -142,8 +146,18 @@ def get_exon_domains(exon):
     return doms
 
 def parse_exon_domains_to_dict(exons):
-    # TODO IN THE MORNING
-    pass
+    for exon in exons:
+        domains_string = exon['domains']#.replace("'",'"')
+        #domains_string = '[{}]'.format(domains_string)
+        domains_states_string = exon['domains_states']#.replace("'",'"')
+        try:
+            exon['domains'] = json.loads(domains_string)
+            exon['domains_states'] = json.loads(domains_states_string)
+        except :
+            print("failed to load domains")
+            print('dom: ',domains_string)
+            print('dom_states: ',domains_states_string)
+            sys.exit(2)
 
 # call when exons list need to load domains info from domains table
 def load_exons_domains(exons):
@@ -156,7 +170,7 @@ def load_exons_domains(exons):
         result = cursor.fetchall()
     # remember to check for None
     if not result:
-        print ('result is none:',result)
+        #print ('result is none:',result)
         return None
     values = {}
     for value in result:
@@ -164,7 +178,8 @@ def load_exons_domains(exons):
             # pack the domains_states and domains_list
             exons[int(value[0])]['domains_states'] = value[1]
             exons[int(value[0])]['domains'] = value[2]
-            print (exons[int(value[0])])
+            #print (exons[int(value[0])])
+    parse_exon_domains_to_dict(exons)
     return True
 # usage: call when need to know what domains an exon contains
 # takes transcript_data of user gtf file (cut up to dict)
@@ -187,10 +202,8 @@ def assign_gtf_domains_to_exons(u_transcript_id, u_exons):
     #print('exons_doms: {}'.format(exons_domains))
     for u_exon in u_exons:
         # u_exons[domains] will be a set of strings
-        u_exon['domains'] = set()
         for exon in exons:
             #exon_domains = exons_domains[exon['index']]
-            print('\n\ncomparing exons\n\n')
             compare_exons(u_exon,exon)
                 # TODO domains assignments should be done in contain maybe
                 # TODO or depend on string result
@@ -230,13 +243,15 @@ def main():
                 f.write('None\n')
                 continue
             for e in exons:
-                doms = str(e.get('domains',''))
-                states = str(e.get('domains_states','No States'))
+                doms = str(e.get('domains','no domains'))
+                if doms != 'no_domains':
+                    print("found one! {}.".format(e))
+                states = str(e.get('domains_states','No states'))
                 if doms == 'set()' or doms == "{''}" or doms == 'None':
                     e['domains'] = 'None'
-                f.write('index: {} domains: {}\n'.format(e['index'],doms))
+                f.write('index: {} states: {} domains: {}\n'.format(e['index'],states,doms))
 
-    print()
+    print('stats:\n',compare_stats)
     print('done')
 
 if __name__ == '__main__':

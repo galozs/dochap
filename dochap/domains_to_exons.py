@@ -1,4 +1,5 @@
 import os
+import json
 import time
 import dill
 import sqlite3 as lite
@@ -229,7 +230,7 @@ def main():
     # dark magic incoming
     # flatten the list
     # make it a list of tuples of id,index,domainlist
-    data = [(exon['transcript_id'],exon['index'],str(exon['domains_states']),','.join((list(map(str,exon['domains']))))) for exons in data if exons != None for exon in exons if exon != None]
+    data = [(exon['transcript_id'],exon['index'],json.dumps((exon['domains_states'])),json.dumps(exon['domains'])) for exons in data if exons != None for exon in exons if exon != None]
     #ids = [tup[0] for tup in data]
     #indexes = [tup[1] for tup in data]
     #domains = [tup[2] for tup in data]
