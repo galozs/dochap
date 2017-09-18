@@ -171,7 +171,7 @@ def assign_gtf_domains_to_exons(u_transcript_id, u_exons):
     #print ('possible domains: ',domains)
     # check for failure
     if not domains or not u_exons:
-        return u_exons
+        return u_exons, domains
     # for each u_exon, check every domain
     for u_exon in u_exons:
         assign_domains_to_exon(u_exon,domains)
@@ -180,18 +180,18 @@ def assign_gtf_domains_to_exons(u_transcript_id, u_exons):
     exons = domains_to_exons.get_exons_by_transcript_id(u_transcript_id)
     # make sure there are exons
     if not exons:
-        return u_exons
+        return u_exons, domains
     # load the exons domains
     # first extract all the domains so they are not extracted everytime
     if not load_exons_domains(exons):
         # no domains for exons at all
-        return u_exons
+        return u_exons, domains
     #exons_domains = list(map(get_exon_domains,exons))
     #print('exons_doms: {}'.format(exons_domains))
     #for u_exon in u_exons:
         # u_exons[domains] will be a set of strings
         #compare_exons(u_exon,exons)
-    return u_exons
+    return u_exons, domains
                 # TODO domains assignments should be done in contain maybe
                 # TODO or depend on string result
                 # skip empty exons(no domains inside them)
@@ -222,6 +222,10 @@ def main():
     bar+=1
     bar.show_progress()
     to_write = [(name,data) for name,data in transcripts.items() if data]
+    with open('output.json','w') as f:
+        f.write(json.dumps(transcripts))
+    # stop here
+    return
     with open(output_file,'w') as f:
         for name,exons in to_write:
             f.write('{}:\n'.format(name))
