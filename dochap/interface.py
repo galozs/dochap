@@ -188,9 +188,9 @@ def assign_gtf_domains_to_exons(u_transcript_id, u_exons):
         return u_exons
     #exons_domains = list(map(get_exon_domains,exons))
     #print('exons_doms: {}'.format(exons_domains))
-    for u_exon in u_exons:
+    #for u_exon in u_exons:
         # u_exons[domains] will be a set of strings
-        compare_exons(u_exon,exons)
+        #compare_exons(u_exon,exons)
     return u_exons
                 # TODO domains assignments should be done in contain maybe
                 # TODO or depend on string result
@@ -231,8 +231,9 @@ def main():
             for e in exons:
                 doms = str(e.get('domains','[]'))
                 states = str(e.get('domains_states','{}'))
-                relations = str(e.get('relations','[]'))
-                f.write('index: {} relations: {} states: {} domains: {}\n'.format(e['index'],relations,states,doms))
+                loc = str((e.get('start',None),e.get('end',None)))
+                rel_loc = str((e.get('relative_start',None),e.get('relative_end',None)))
+                f.write('index: {} loc: {}, rel_loc: {} states:{} domains: {}\n'.format(e['index'],loc,rel_loc,states,doms))
     print('done')
 
 if __name__ == '__main__':
