@@ -112,6 +112,7 @@ def assignDomainsToExons(transcript_id,domains):
     # i dont know from what each domain relative location is relative to
     relative_start = 1
     relative_stop = 0
+    last_exon = None
     for exon in exons:
         # domains indexes will be used as strings
         # states will be start,end,contains,contained
@@ -181,7 +182,11 @@ def assignDomainsToExons(transcript_id,domains):
             #    domains_in_exon.append(domain)
         nums = [domain['index'] for domain in domains_in_exon]
         exon['domains'] = domains_in_exon
-        relative_start = relative_stop + 1
+        relative_start_mod = 0
+        if last_exon:
+            relative_start_mod = abs(exon['start'] - last_exon['end'])
+        relative_start = relative_stop + 1 + relative_start_mod
+        last_exon = exon
     return exons
 
 def get_bar():
