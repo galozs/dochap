@@ -222,7 +222,7 @@ def main():
     bar+=1
     bar.show_progress()
     to_write = [(name,data) for name,data in transcripts.items() if data]
-    with open('output.json','w') as f:
+    with open(outputfile,'w') as f:
         f.write(json.dumps(transcripts))
     # stop here
     return
