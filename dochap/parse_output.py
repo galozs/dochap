@@ -18,8 +18,8 @@ def parse_output(json_dump):
 def main():
     data = parse_output_file('output.json')
     for index, (key,item) in enumerate(data.items()):
-        if index > 10:
-            return
+        if not 100 < index < 150:
+            continue
         visualizer.visualize_transcript(item)
 
 if __name__ == '__main__':
