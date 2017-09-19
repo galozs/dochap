@@ -204,6 +204,24 @@ def assign_gtf_domains_to_exons(u_transcript_id, u_exons):
     # exons now have domains data
 
 
+def interface(input_file,outputfile):
+    print('parsing {}...'.format(input_file))
+    transcripts = parse_gtf(input_file)
+    print('assigning domains to exons...')
+    bar = progressbar.AnimatedProgressBar(end=len(transcripts),width=10)
+    for transcript_id,exons in transcripts.items():
+        transcripts[transcript_id] = assign_gtf_domains_to_exons(transcript_id,exons)
+        bar+=1
+        bar.show_progress()
+    bar+=1
+    bar.show_progress()
+    to_write = [(name,data) for name,data in transcripts.items() if data]
+    with open(outputfile,'w') as f:
+        f.write(json.dumps(transcripts))
+    # stop here
+    return outputfile
+
+
 # takes argv
 def main():
     if len(sys.argv) < 3:
