@@ -13,25 +13,29 @@ def set_width(value):
 
 RECT_HEIGHT=40
 SPACING = 20
-def visualize_transcript(transcript):
-    exons = transcript[0]
-    domains = transcript[1]
-    draw_transcript(exons,domains)
+import pathlib
+def visualize_transcript(folder,transcript):
+    pathlib.Path('svgs/{}'.format(folder)).mkdir(parents=True, exist_ok=True)
 
-def draw_transcript(exons,domains):
+    user_exons = transcript[0]
+    domains = transcript[1]
+    db_exons = transcript[2]
+    draw_transcript(folder,user_exons,domains,db_exons)
+
+def draw_transcript(folder,user_exons,domains, db_exons):
     running_height = 0
-    if not exons:
-        print('no exons')
+    if not user_exons:
+        print('no user exons')
         return
-    #transcript_start = int(exons[0]['start'])
-    #transcript_end = int(exons[-1]['end'])
+    #transcript_start = int(user_exons[0]['start'])
+    #transcript_end = int(user_exons[-1]['end'])
     rel_start = 1
-    rel_end = int(exons[-1]['relative_end'])
+    rel_end = int(user_exons[-1]['relative_end'])
     set_width(rel_end)
-    gene_name = exons[0]['gene_id']
-    transcript_id = exons[0]['transcript_id']
+    gene_name = user_exons[0]['gene_id']
+    transcript_id = user_exons[0]['transcript_id']
     # draw the transcript
-    dwg = svgwrite.Drawing(filename='svgs/'+transcript_id+'.svg',size=('100%','100%'))
+    dwg = svgwrite.Drawing(filename='svgs/{}/{}.svg'.format(folder,transcript_id),size=('100%','100%'))
     dwg.defs.add(dwg.style('''
         text
         { visibility: hidden;   pointer-events: none;}
@@ -42,13 +46,15 @@ def draw_transcript(exons,domains):
         rect:hover ~ text
         { visibility: visible; }
         '''))
-    draw_rect(dwg,(0,0),rel_end,RECT_HEIGHT,text=transcript_id, is_trans=True)
+    draw_rect(dwg,(1,0),rel_end,RECT_HEIGHT,text=transcript_id, is_trans=True)
     #dwg.add(dwg.text(text=str(rel_start),insert=(rel_start,RECT_HEIGHT+1+running_height),font_size=20))
     #dwg.add(dwg.text(text=str(rel_end),insert=(rel_end,RECT_HEIGHT+1+running_height),font_size=20))
     running_height += RECT_HEIGHT + SPACING
     draw_domains(dwg,domains,running_height)
-    draw_exons(dwg,exons,running_height)
+    draw_user_exons(dwg,user_exons,running_height)
+    draw_db_exons(dwg,db_exons,running_height)
     dwg.save()
+
 
 
 def normalize(value):
@@ -86,9 +92,8 @@ def draw_domains(dwg,domains,running_height):
     if not domains:
         dwg.add(dwg.text("no domains",(0,50)))
         return
-    print(dwg.filename)
+    #print(dwg.filename)
     for domain in domains:
-        print('drawing domain: {}'.format(domain))
         draw_domain(dwg,domain)
     running_height += SPACING*3
 
@@ -102,22 +107,35 @@ def draw_domain(dwg,domain):
     #domain_data_pos = (0, position[1]+running_height+SPACING*4)
     #g.add(dwg.text(text=str(domain),insert=domain_data_pos,font_size=14))
 
-def draw_exons(dwg,exons,running_height):
+def draw_user_exons(dwg,exons,running_height):
     exons_g = dwg.add(dwg.g(id='exons',font_size=14))
     if not exons:
         exons_g.add(dwg.text("no exons",(0,100)))
         return
     for exon in exons:
         draw_exon(dwg,exon,running_height)
+    running_height += SPACING*3
+
+def draw_db_exons(dwg,exons,running_height):
+    exons_g = dwg.add(dwg.g(id='db_exons',font_size=14))
+    if not exons:
+        exons_g.add(dwg.text("no db_exons",(0,100)))
+        return
+    for exon in exons:
+        draw_exon(dwg,exon,running_height+SPACING,color='yellow')
+    running_height += SPACING*3
 
 
-def draw_exon(dwg,exon,running_height):
+
+def draw_exon(dwg,exon,running_height,color=None):
+    if not color:
+        color = 'green'
     start = int(exon['relative_start'])
     end = int(exon['relative_end'])
     width = end-start
     position = start,running_height
     height = RECT_HEIGHT/2
-    g = draw_rect(dwg,position ,width,height,'green','black',tooltip_text=str(exon))
+    g = draw_rect(dwg,position ,width,height,color,'black',tooltip_text=str(exon))
     #exon_data_pos = (0, position[1]+SPACING*4)
     #g.add(dwg.text(text=str(exon),insert=exon_data_pos,font_size=14))
 

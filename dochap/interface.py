@@ -40,7 +40,7 @@ def parse_gtf(file_path):
             # increment relative start location
             if exon['transcript_id'] == transcript_id_prev:
                 # SHOULD BE relative_start = relative_end + ({NEW EXON START} - {LAST EXON START})
-                relative_start = relative_end + 1 #+ abs(last_exon['start'] - exon['end'])
+                relative_start = relative_end + 1 + abs(last_exon['end'] - exon['start'])
             # reset relative start location
             else:
                 exons = []
