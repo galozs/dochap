@@ -74,8 +74,8 @@ def draw_rect(dwg,position,width,height,fill_color='red',stroke_color='black',te
     if tooltip_text:
         rect.set_desc(title=tooltip_text,desc=tooltip_text)
     if text:
-        text_pos = position[0] + width/3,position[1] + height/3*2
-        g.add(dwg.text(text=text,id="shown",insert=text_pos,font_size=20))
+        text_pos = position[0] + width/2,position[1] + height/3
+        g.add(dwg.text(text=text,id="shown",insert=text_pos,font_size=20,style="text-anchor: middle; dominant-baseline: hanging;"))
 
     dwg.add(dwg.line(start=(position[0],position[1]+height-10),end=(position[0],position[1]+height+10),stroke='black',stroke_width=2))
     dwg.add(dwg.line(start=(position[0]+width,position[1]+height-10),end=(position[0]+width,position[1]+height+10),stroke='black',stroke_width=2))
