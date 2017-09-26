@@ -4,6 +4,12 @@ import requests
 import progressbar
 from sh import gunzip
 
+# add species here to have correct placement in db folders
+species = {
+    'Mouse':'Mus_musculus'
+    'Human':'Homo_sapiens'
+}
+
 url = "http://genome-euro.ucsc.edu/cgi-bin/hgTables"
 
 params2 = {
@@ -151,6 +157,8 @@ def write_to_file(data,path):
     with open(path, 'w') as f:
         f.writelines(data)
 
+def get_specie_name(specie):
+    return species[specie]
 
 def main():
     transcript_data = get_transcript_data()
@@ -160,11 +168,11 @@ def main():
         print ('alias name: ',name)
         write_to_file(data_splitter(alias[0]),name)
     for data in transcript_data:
-        name = 'db/'+data[1]['org']+'/'+data[1]['hgta_table']+'.txt'
+        name = 'db/'+get_specie_name(data[1]['org'])+'/'+data[1]['hgta_table']+'.txt'
         print ('data name: ',name)
         write_to_file(data_splitter(data[0]),name)
 
-    ftp_files =[(human_aliases,'db/Human/kgAliases.txt'),(human_knownGene,'db/Human/knownGene.txt')]
+    ftp_files =[(human_aliases,'db/'+species['Human']+'/kgAliases.txt'),(human_knownGene,'db/Human/knownGene.txt')]
     download_ftp_data(ftp_address,'anonymous','elbazni@post.bgu.ac.il',ftp_files)
 
 if __name__ == '__main__':
