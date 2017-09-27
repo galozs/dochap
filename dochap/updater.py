@@ -9,6 +9,7 @@ import subprocess
 import progressbar
 import pathlib
 import conf
+from sh import gunzip
 prot_path = "genomes/{}/protein/protein.gbk.gz"
 filename = "protein.gbk.gz"
 # species is Homo_sapiens, Mus_musculus
@@ -64,10 +65,11 @@ for specie in conf.species:
             archive_progress.show_progress()
             print()
             print ("download complete.")
+        gunzip(formatted_extract_path+filename,'-f')
     print ("Moving new readme file...")
     os.rename(formatted_extract_path+"readme_new", formatted_extract_path+"readme_old")
 print ("starting database upgrade...")
 ftp.quit()
-print ("EXITING NOW, PLEASE REMOVE ME")
+#print ("EXITING NOW, PLEASE REMOVE ME")
 #sys.exit(2)
 subprocess.call(['./updater.sh'])

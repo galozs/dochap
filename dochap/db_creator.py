@@ -5,7 +5,7 @@ import threading
 import gbk_parser
 import ucsc_parser
 import conf
-records = gbk_parser.records
+records = gbk_parser.get_records()
 
 def write_aliases():
     print("writing aliases.txt")
@@ -30,7 +30,11 @@ def create_better_aliases_db(specie):
         aliases_lines = f.readlines()
 
     values_keys = [tuple(line.replace('\n','').split('\\t')) for line in aliases_lines]
-    zipped = [(key,value) for value,key in values_keys]
+    try:
+        zipped = [(key,value) for value,key in values_keys]
+    except:
+        values_keys = [tuple(line.replace('\n','').split('\t')) for line in aliases_lines]
+        zipped = [(key,value) for value,key in values_keys]
     # write pairs to db
     with lite.connect(conf.databases[specie]) as con:
         cursor = con.cursor()
@@ -93,7 +97,7 @@ def create_comb_db(specie):
         cur = con.cursor()
         cur.execute("drop table if exists genebank;")
         cur.execute("CREATE TABLE genebank(Id INT, symbol TEXT, db_xref TEXT, coded_by TEXT, chromosome TEXT,strain TEXT, cds TEXT, sites TEXT, regions TEXT)")
-        for index,record in enumerate(records):
+        for index,record in enumerate(records[specie]):
             sites=[]
             regions=[]
             cds = []
@@ -111,9 +115,12 @@ def create_comb_db(specie):
                         chromosome = feature.qualifiers['chromosome'][0]
                 if feature.type == 'CDS':
                     cds.append(str(feature))
-                    name=feature.qualifiers['gene'][0]
-                    coded_by = feature.qualifiers['coded_by'][0]
-                    db_xref = feature.qualifiers['db_xref'][0]
+                    if 'gene' in feature.qualifiers:
+                        name = feature.qualifiers['gene'][0]
+                    if 'coded_by' in feature.qualifiers:
+                        coded_by = feature.qualifiers['coded_by'][0]
+                    if 'db_xref' in feature.qualifiers:
+                        db_xref = feature.qualifiers['db_xref'][0]
                     location = str(feature.location)
                 if feature.type == 'Site':
                     sites.append(feature.qualifiers['site_type'][0]+str(feature.location))

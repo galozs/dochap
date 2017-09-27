@@ -9,7 +9,9 @@ import conf
 from functools import partial
 # get all sequence records from the gbk file
 gbk_file = "db/{}/protein.gbk"
-records = {specie:parse_proteins(specie) for specie in conf.species}
+def get_records():
+    records = {specie:parse_proteins(specie) for specie in conf.species}
+    return records
 
 #records = [record for record in SeqIO.parse(gbk_file,"genbank")]
 def parse_proteins(specie):

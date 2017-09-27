@@ -6,7 +6,7 @@ from sh import gunzip
 
 # add species here to have correct placement in db folders
 species = {
-    'Mouse':'Mus_musculus'
+    'Mouse':'Mus_musculus',
     'Human':'Homo_sapiens'
 }
 
@@ -139,6 +139,12 @@ def download_ftp_data(address,username,password,files):
         print()
         print('extracting...')
         gunzip(file[1]+'.gz','-f')
+        # add \ to \t because backward comp
+        with open(file[1], 'r') as f:
+            content = f.read()
+        content.replace('\t','\\t')
+        with open(file[1], 'w') as f:
+            f.write(content)
         print('done')
 
 def data_splitter(raw_data):
@@ -164,7 +170,7 @@ def main():
     transcript_data = get_transcript_data()
     transcript_aliases = get_transcript_aliases()
     for alias in transcript_aliases:
-        name = 'db/'+alias[1]['org']+'/'+alias[1]['hgta_table']+'.txt'
+        name = 'db/'+get_specie_name(alias[1]['org'])+'/'+alias[1]['hgta_table']+'.txt'
         print ('alias name: ',name)
         write_to_file(data_splitter(alias[0]),name)
     for data in transcript_data:
@@ -172,7 +178,7 @@ def main():
         print ('data name: ',name)
         write_to_file(data_splitter(data[0]),name)
 
-    ftp_files =[(human_aliases,'db/'+species['Human']+'/kgAliases.txt'),(human_knownGene,'db/Human/knownGene.txt')]
+    ftp_files =[(human_aliases,'db/'+species['Human']+'/kgAlias.txt'),(human_knownGene,'db/'+species['Human']+'/knownGene.txt')]
     download_ftp_data(ftp_address,'anonymous','elbazni@post.bgu.ac.il',ftp_files)
 
 if __name__ == '__main__':

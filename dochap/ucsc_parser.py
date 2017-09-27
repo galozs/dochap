@@ -12,6 +12,8 @@ def parse_knownGene(path):
     for line in lines:
         line = line.replace('\n','').replace('\\n','')
         splitted_line = line.split('\\t')
+        if len(splitted_line) <2:
+            splitted_line = line.split('\t')
         data = {}
         data['name'] = splitted_line[0]
         data['chrom'] = splitted_line[1]
