@@ -4,6 +4,7 @@ import progressbar
 import sys
 import domains_to_exons
 import sqlite3 as lite
+import conf
 
 transcript_db = 'db/transcript_data.db'
 domains_db = 'db/domains.db'
@@ -78,8 +79,8 @@ def compare_exons(u_exon,exons):
 
 
 # exon is a dict with transcript_id and index
-def get_exon_domains(exon):
-    with lite.connect(domains_db) as con:
+def get_exon_domains(exon,specie):
+    with lite.connect(conf.databases[specie]) as con:
         cursor = con.cursor()
         cursor.execute("SELECT domains_list from domains WHERE transcript_id = ? AND exon_index = ?",(exon['transcript_id'],exon['index']))
         result = cursor.fetchone()
@@ -102,11 +103,11 @@ def parse_exon_domains_to_dict(exons):
             sys.exit(2)
 
 # call when exons list need to load domains info from domains table
-def load_exons_domains(exons):
+def load_exons_domains(exons,specie):
     transcript_id = exons[0]['transcript_id']
     indexes = set([str(exon['index']) for exon in exons])
     # conncet do domains db
-    with lite.connect(domains_db) as con:
+    with lite.connect(conf.databases[specie]) as con:
         cursor = con.cursor()
         cursor.execute("SELECT exon_index,domains_states,domains_list FROM domains WHERE transcript_id = ?",(transcript_id,))
         result = cursor.fetchall()
@@ -166,8 +167,8 @@ def assign_domains_to_exon(exon, domains):
 # usage: call when need to know what domains an exon contains
 # takes transcript_data of user gtf file (cut up to dict)
 # need to have atleast transcirpt_id and exons value
-def assign_gtf_domains_to_exons(u_transcript_id, u_exons):
-    domains = domains_to_exons.get_domains(u_transcript_id)
+def assign_gtf_domains_to_exons(u_transcript_id, u_exons,specie):
+    domains = domains_to_exons.get_domains(u_transcript_id,specie)
     #print ('possible domains: ',domains)
     # check for failure
     if not domains or not u_exons:
@@ -177,16 +178,16 @@ def assign_gtf_domains_to_exons(u_transcript_id, u_exons):
         assign_domains_to_exon(u_exon,domains)
     # can now do compare to exons step
 
-    exons = domains_to_exons.get_exons_by_transcript_id(u_transcript_id)
+    exons = domains_to_exons.get_exons_by_transcript_id(u_transcript_id,specie)
     # make sure there are exons
     if not exons:
         return u_exons, domains
     # load the exons domains
     # first extract all the domains so they are not extracted everytime
-    if not load_exons_domains(exons):
+    if not load_exons_domains(exons,specie):
         # no domains for exons at all
         return u_exons, domains
-    #exons_domains = list(map(get_exon_domains,exons))
+    #exons_domains = list(map(get_exon_domains,exons,specie))
     #print('exons_doms: {}'.format(exons_domains))
     #for u_exon in u_exons:
         # u_exons[domains] will be a set of strings
@@ -204,13 +205,13 @@ def assign_gtf_domains_to_exons(u_transcript_id, u_exons):
     # exons now have domains data
 
 
-def interface(input_file,outputfile):
+def interface(input_file,outputfile,specie):
     print('parsing {}...'.format(input_file))
     transcripts = parse_gtf(input_file)
     print('assigning domains to exons...')
     bar = progressbar.AnimatedProgressBar(end=len(transcripts),width=10)
     for transcript_id,exons in transcripts.items():
-        transcripts[transcript_id] = assign_gtf_domains_to_exons(transcript_id,exons)
+        transcripts[transcript_id] = assign_gtf_domains_to_exons(transcript_id,exons,specie)
         bar+=1
         bar.show_progress()
     bar+=1
@@ -224,11 +225,12 @@ def interface(input_file,outputfile):
 
 # takes argv
 def main():
-    if len(sys.argv) < 3:
-        print('inteface.py <inputfile> <outputfile>')
+    if len(sys.argv) < 4:
+        print('inteface.py <specie> <inputfile> <outputfile>')
         sys.exit(2)
-    input_file = sys.argv[1]
-    output_file = sys.argv[2]
+    specie = sys.argv[1]
+    input_file = sys.argv[2]
+    output_file = sys.argv[3]
     print('parsing {}...'.format(input_file))
     transcripts = parse_gtf(input_file)
     print('assigning domains to exons...')

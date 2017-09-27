@@ -2,6 +2,7 @@ import os
 import sqlite3
 import getopt
 import sys
+import conf
 
 def parseGTF(filename):
     with open(filename) as f:
@@ -58,13 +59,14 @@ def parseGTF(filename):
     userTranscripts.append(transcript)
     return userTranscripts
 
-help_message = "parser.py -i <inputfile> -o <outputfile>"
+help_message = "parser.py -i <inputfile> -o <outputfile> -s specie"
 
 def main(argv):
     input_file = ''
     out_putfile =''
+    specie = ''
     try:
-        opts,args = getopt.getopt(argv,'h:i:o')
+        opts,args = getopt.getopt(argv,'h:i:o:s')
     except getopt.GetoptError:
         print(help_message)
         sys.exit(2)
@@ -76,10 +78,12 @@ def main(argv):
            input_file = arg
         elif opt in('-o','-ofile'):
             output_file = arg
-    if input_file =='':
+        elif opt in ('-s','-specie'):
+            specie = arg
+    if input_file =='' or specie = '':
         print(help_message)
         sys.exit()
-    data= loadData('db/comb.db')
+    data = loadData('db/comb.db')
     for d in data[:5]:
         print (str(d) +'\n')
     #parsed_gtf =  parseGTF(input_file)
@@ -132,12 +136,12 @@ def assignDomainsToUExon(data,uTranscript):
     return newUTranscript
 
 
-def loadData(db_path):
-    with sqlite3.connect(db_path) as con:
+def loadData(db_path,specie):
+    with sqlite3.connect(conf.databases[specie]) as con:
         data =[]
         con.row_factory = sqlite3.Row
         cursor = con.cursor()
-        result = cursor.execute("SELECT * FROM genes ")
+        result = cursor.execute("SELECT * FROM genebank ")
         while True:
             row = result.fetchone()
             if not row:

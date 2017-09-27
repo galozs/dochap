@@ -6,6 +6,7 @@ import sqlite3 as lite
 import progressbar
 from pathos.multiprocessing import ProcessingPool, ThreadingPool
 from functools import partial
+import conf
 
 domains_db = 'db/domains.db'
 alias_db = 'db/aliases.db'
@@ -17,10 +18,10 @@ bar = 0
 # for each one find matching alias in alias.db
 # use alias to find sites and regions data in comb.db
 # get all domains of a transcript
-def get_domains(transcript_id):
-    # use better aliases
-    alias_db = 'db/better_aliases.db'
-    with lite.connect(alias_db) as con:
+def get_domains(transcript_id, specie):
+    # use better aliases - obselete
+    #alias_db = 'db/better_aliases.db'
+    with lite.connect(conf.databases[specie]) as con:
         cursor = con.cursor()
         cursor.execute("SELECT name from aliases WHERE transcript_id = ?",(transcript_id,))
         #cursor.execute("SELECT aliases from genes WHERE transcript_id = ?",(transcript_id,))
@@ -31,10 +32,10 @@ def get_domains(transcript_id):
             #aliases = data[0].split(';')
         else:
             return None
-    with lite.connect(comb_db) as con:
+    with lite.connect(conf.databases[specie]) as con:
         for alias in aliases:
             cursor = con.cursor()
-            cursor.execute("SELECT sites,regions from genes WHERE symbol = ?",(alias,))
+            cursor.execute("SELECT sites,regions from genebank WHERE symbol = ?",(alias,))
             results = cursor.fetchall()
             domain_list = []
             #print('result for {} alias {} is:\n{}'.format(transcript_id,alias,results))
@@ -70,8 +71,8 @@ def get_domains(transcript_id):
                 pass
                 #print('found no sites or regions for {} alias {}'.format(transcript_id,alias))
 
-def get_exons_by_transcript_id(transcript_id):
-    with lite.connect(transcripts_db) as con:
+def get_exons_by_transcript_id(transcript_id,specie):
+    with lite.connect(conf.databases[specie]) as con:
         con.row_factory = lite.Row
         cursor = con.cursor()
         cursor.execute("SELECT * FROM transcripts WHERE name = ?",(transcript_id,))
@@ -105,9 +106,9 @@ def get_exons(result):
     return exons
 
 
-def assignDomainsToExons(transcript_id,domains):
+def assignDomainsToExons(transcript_id, domains, specie):
     # get data about the transcript
-    with lite.connect(transcripts_db) as con:
+    with lite.connect(conf.databases[specie]) as con:
         con.row_factory = lite.Row
         cursor = con.cursor()
         cursor.execute("SELECT * FROM transcripts WHERE name = ?",(transcript_id,))
@@ -130,7 +131,7 @@ def assignDomainsToExons(transcript_id,domains):
             return
         for domain in domains:
             if (not str.isdigit(domain['start'])):
-                #print ("FUCKING FAILED ON {} domain is: {}".format(transcript_id,domain))
+                print ("FAILED ON {} domain is: {}".format(transcript_id,domain))
                 sys.exit(2)
             dom_start = int(domain['start']) * 3 - 2
             dom_stop = int(domain['end']) * 3
@@ -151,7 +152,6 @@ def assignDomainsToExons(transcript_id,domains):
                 # empty, no overlap
                 continue
 
-            
             if dom_start in intersection:
                 # exon start location in domain
                 # domain is atleast partialy on exon
@@ -199,18 +199,18 @@ def assignDomainsToExons(transcript_id,domains):
 def get_bar():
     return bar
 
-def assign_and_get(name):
+def assign_and_get(specie,name):
     global bar
     bar = bar+1
     if name:
-        return assignDomainsToExons(name,get_domains(name))
+        return assignDomainsToExons(name,get_domains(name,specie),specie)
     return None
 
-def write_to_db(data):
+def write_to_db(data,specie):
     # write all domains in exons to db
     # data is build [(id,index,[domains_nums]),...]
     #print('writing to db/domains.db...')
-    with lite.connect(domains_db) as con:
+    with lite.connect(conf.databases[specie]) as con:
         cursor = con.cursor()
         cursor.executescript("drop table if exists domains;")
         cursor.execute("CREATE TABLE domains(transcript_id TEXT, exon_index INT,domains_states TEXT, domains_list TEXT)")
@@ -218,13 +218,14 @@ def write_to_db(data):
 
 
 
-def main():
+def main(specie):
     #print(get_domains('uc007aeu.1'))
     #print(get_domains('uc012gqd.1'))
     #print(get_domains('uc007afi.2'))
     print("loading data...")
-    with lite.connect('db/better_aliases.db') as con:
+    with lite.connect(conf.databases[specie]) as con:
         cursor = con.cursor()
+        # TODO might be a problem here
         cursor.execute("SELECT DISTINCT transcript_id from aliases")
         result = cursor.fetchall()
     names = [value[0] for value in result]
@@ -232,7 +233,8 @@ def main():
     global bar
     bar = progressbar.AnimatedProgressBar(end=len(names),width=10)
     pool = ThreadingPool(num_threads)
-    result = pool.amap(assign_and_get,names)
+    assign_and_get_with_specie = partial(assign_and_get, specie)
+    result = pool.amap(assign_and_get_with_specie,names)
     while True:
         if result.ready():
             break
@@ -247,8 +249,9 @@ def main():
     #indexes = [tup[1] for tup in data]
     #domains = [tup[2] for tup in data]
     #data = zip(ids,indexes,names)
-    write_to_db(data)
+    write_to_db(data,specie)
 
 if __name__ == '__main__':
-    main()
+    for specie in conf.species:
+        main(specie)
 

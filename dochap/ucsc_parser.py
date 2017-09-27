@@ -1,6 +1,7 @@
 import os
+import conf
 
-knownGene_path = 'db/transcript_data.txt'
+knownGene_path = 'db/{}/knownGene.txt'
 # parse a given knownGene table from ucsc
 # returns a nice dictionary
 def parse_knownGene(path):
@@ -28,7 +29,8 @@ def parse_knownGene(path):
     return names
 
 def main():
-    parse_knownGene(knownGene_path)
+    for specie in conf.species:
+        parse_knownGene(knownGene_path.format(specie))
 
 if __name__ == '__main__':
     main()

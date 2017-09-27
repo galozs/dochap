@@ -8,17 +8,17 @@ import os.path
 import subprocess
 import progressbar
 import pathlib
+import conf
 prot_path = "genomes/{}/protein/protein.gbk.gz"
 filename = "protein.gbk.gz"
 # species is Homo_sapiens, Mus_musculus
-species = ['Homo_sapiens','Mus_musculus']
 extract_path = "db/{}/"
 readme_file = 'genomes/{}/README_CURRENT_RELEASE'
 print ("connecting to ftp.ncbi.nlm.nih.gov...")
 ftp = FTP("ftp.ncbi.nlm.nih.gov")
 print ("logging in...")
 ftp.login()
-for specie in species:
+for specie in conf.species:
     formatted_extract_path = extract_path.format(specie)
     print ("Creating directory {} ".format(formatted_extract_path))
     pathlib.Path(formatted_extract_path).mkdir(parents=True, exist_ok=True)
@@ -69,5 +69,5 @@ for specie in species:
 print ("starting database upgrade...")
 ftp.quit()
 print ("EXITING NOW, PLEASE REMOVE ME")
-sys.exit(2)
+#sys.exit(2)
 subprocess.call(['./updater.sh'])
