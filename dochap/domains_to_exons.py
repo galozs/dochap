@@ -12,12 +12,13 @@ domains_db = 'db/domains.db'
 alias_db = 'db/aliases.db'
 comb_db = 'db/comb.db'
 transcripts_db = 'db/transcript_data.db'
-num_threads = 8
+num_threads = 1
 bar = 0
 # run on all transcripts in transcripts.db
 # for each one find matching alias in alias.db
 # use alias to find sites and regions data in comb.db
 # get all domains of a transcript
+#TODO DOESNT WORK
 def get_domains(transcript_id, specie):
     # use better aliases - obselete
     #alias_db = 'db/better_aliases.db'
@@ -44,8 +45,9 @@ def get_domains(transcript_id, specie):
                 domain_types = ['site','region']
                 for counter,domains in enumerate(results[0]):
                     splitted = domains.split(',')
+                    #print ('splitted: ',splitted)
                     for result in splitted:
-                        if '[' not in result:
+                        if '[' not in result or ']' not in result:
                             #print('bad result for {} alias {} result:\n'.format(transcript_id,alias,result))
                             continue
                         modified = result.replace(',',':')
@@ -53,14 +55,23 @@ def get_domains(transcript_id, specie):
                         part_two = modified.split('[')[-1].replace(']',':').split(':')
                         domain = {}
                         # check that line is not empty
+                        #print ('modified: ',modified)
                         if not modified[0]:
                             #print('bad modified for {} alias {} modified:\n'.format(transcript_id,alias,modified))
                             continue
                         domain['type'] = domain_types[counter]
                         domain['name'] = part_one
+                        if len(part_two) < 2:
+                            print ('fucked up on part_two')
+                            print ('result:', result)
+                            print ('part_one: ',part_one)
+                            print ('part_two: ',part_two)
+                            print ('modified: ',modified)
+
                         domain['start'] = part_two[0]
                         domain['end'] = part_two[1]
                         domain['index'] = len(domain_list)
+                        #print ('domain: ', domain)
                         if not str.isdigit(domain['start']) or not str.isdigit(domain['end']):
                             #print('bad strings in domain for {} alias {} domain:\n'.format(transcript_id,alias,domain))
                             continue
@@ -115,6 +126,8 @@ def assignDomainsToExons(transcript_id, domains, specie):
         # currently use the first result only (there shouldnt be more then one)
         result = cursor.fetchone()
     exons = get_exons(result)
+    #print("exons",exons)
+    #print("domains",domains)
     # TODO
     # next statement might not be accurate
     # i dont know from what each domain relative location is relative to
@@ -200,6 +213,7 @@ def get_bar():
     return bar
 
 def assign_and_get(specie,name):
+    #print ('assign and get specie {} name {}'.format(specie,name))
     global bar
     bar = bar+1
     if name:
@@ -222,13 +236,14 @@ def main(specie):
     #print(get_domains('uc007aeu.1'))
     #print(get_domains('uc012gqd.1'))
     #print(get_domains('uc007afi.2'))
-    print("loading data...")
+    print("loading {} data...".format(specie))
     with lite.connect(conf.databases[specie]) as con:
         cursor = con.cursor()
         # TODO might be a problem here
         cursor.execute("SELECT DISTINCT transcript_id from aliases")
         result = cursor.fetchall()
     names = [value[0] for value in result]
+    print("creating transcript database for {}".format(specie))
     # give this thing a progress bar
     global bar
     bar = progressbar.AnimatedProgressBar(end=len(names),width=10)
@@ -250,7 +265,7 @@ def main(specie):
     #domains = [tup[2] for tup in data]
     #data = zip(ids,indexes,names)
     write_to_db(data,specie)
-
+    print()
 if __name__ == '__main__':
     for specie in conf.species:
         main(specie)
