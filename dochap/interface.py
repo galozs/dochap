@@ -61,6 +61,7 @@ def parse_gtf(file_path):
 
 
 # compare the domains of user exon and db exon
+# 
 def compare_domains(u_exon,exon):
     if u_exon['start'] == exon['start'] and u_exon['end'] == exon['end']:
                 return 'identical'
@@ -78,7 +79,10 @@ def compare_exons(u_exon,exons):
         u_exon['relations'].append(compare_domains(u_exon,exon))
 
 
-# exon is a dict with transcript_id and index
+# returns the domains associated with a given exon index and transcript id 
+# input:
+# exon: dict with transcript_id and index
+# specie: string of the specie (must be one from conf.py)
 def get_exon_domains(exon,specie):
     with lite.connect(conf.databases[specie]) as con:
         cursor = con.cursor()
@@ -89,6 +93,11 @@ def get_exon_domains(exon,specie):
     doms = result[0].split(',')
     return doms
 
+# parse the given exons json string
+# input:
+# exons: list of dictionaries that contains json dump of domains and domains_states
+# output:
+# exons: list of dictionaris that contains domains and domains_states
 def parse_exon_domains_to_dict(exons):
     for exon in exons:
         domains_string = exon['domains']#.replace("'",'"')
@@ -101,8 +110,15 @@ def parse_exon_domains_to_dict(exons):
             print('dom: ',domains_string)
             print('dom_states: ',domains_states_string)
             sys.exit(2)
+    return exons
 
 # call when exons list need to load domains info from domains table
+# input:
+# exons: list of dictionaries that will be populated with json strings from the database
+# specie: string of the specie (must be one from conf.py)
+# output:
+# True if loaded anything
+# None if didn't load anything
 def load_exons_domains(exons,specie):
     transcript_id = exons[0]['transcript_id']
     indexes = set([str(exon['index']) for exon in exons])
@@ -115,7 +131,6 @@ def load_exons_domains(exons,specie):
     if not result:
         #print ('result is none:',result)
         return None
-    values = {}
     for value in result:
         if value:
             # pack the domains_states and domains_list
@@ -126,8 +141,14 @@ def load_exons_domains(exons,specie):
     return True
 
 
+# TODO if comparison method is changed - update this method.
 # usage: call to fill exon with domain data
-# maybe put this in some util file
+# input:
+# exon: dictionary of exon data
+# domains: list of domains (dictionaries)
+# output:
+# the exon's key domains_states will be a list of states (index will reference the domain's index)
+# possible values: 'contained','start','end','contained'.
 def assign_domains_to_exon(exon, domains):
     domains_in_exon = []
     exon['domains_states'] = {}
@@ -167,6 +188,13 @@ def assign_domains_to_exon(exon, domains):
 # usage: call when need to know what domains an exon contains
 # takes transcript_data of user gtf file (cut up to dict)
 # need to have atleast transcirpt_id and exons value
+# input:
+# u_transcript_id:  id of the transcript
+# u_exons: list of dictionaries
+# specie: string of the specie (must be one from conf.py)
+# output:
+# u_exons: the exons of the transcript id
+# domains: the domains of the transcript id
 def assign_gtf_domains_to_exons(u_transcript_id, u_exons,specie):
     domains = domains_to_exons.get_domains(u_transcript_id,specie)
     #print ('possible domains: ',domains)
@@ -204,8 +232,14 @@ def assign_gtf_domains_to_exons(u_transcript_id, u_exons,specie):
                 #print(u_exon['domains'])
     # exons now have domains data
 
-
-def interface(input_file,outputfile,specie):
+# the interface of dochap.
+# input:
+# input_file: path to input file
+# output_file: path to the output file
+# specie: string of the specie (must be one from conf.py)
+# output:
+# output_file: the path to the output file
+def interface(input_file,output_file,specie):
     print('parsing {}...'.format(input_file))
     transcripts = parse_gtf(input_file)
     print('assigning domains to exons...')
@@ -217,13 +251,14 @@ def interface(input_file,outputfile,specie):
     bar+=1
     bar.show_progress()
     to_write = [(name,data) for name,data in transcripts.items() if data]
-    with open(outputfile,'w') as f:
+    with open(output_file,'w') as f:
         f.write(json.dumps(transcripts))
     # stop here
-    return outputfile
+    return output_file
 
 
 # takes argv
+# usage - will be printed upon calling the script
 def main():
     if len(sys.argv) < 4:
         print('inteface.py <specie> <inputfile> <outputfile>')
