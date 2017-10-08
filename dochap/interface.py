@@ -236,13 +236,13 @@ def main():
     print('assigning domains to exons...')
     bar = progressbar.AnimatedProgressBar(end=len(transcripts),width=10)
     for transcript_id,exons in transcripts.items():
-        transcripts[transcript_id] = assign_gtf_domains_to_exons(transcript_id,exons)
+        transcripts[transcript_id] = assign_gtf_domains_to_exons(transcript_id,exons,specie)
         bar+=1
         bar.show_progress()
     bar+=1
     bar.show_progress()
     to_write = [(name,data) for name,data in transcripts.items() if data]
-    with open(outputfile,'w') as f:
+    with open(output_file,'w') as f:
         f.write(json.dumps(transcripts))
     # stop here
     return

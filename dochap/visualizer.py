@@ -1,7 +1,7 @@
 import os
 import svgwrite
 from svgwrite import cm,mm,rgb
-
+import pathlib
 running_height = 0
 max_width = 0
 def main():
@@ -13,7 +13,9 @@ def set_width(value):
 
 RECT_HEIGHT=40
 SPACING = 20
-import pathlib
+# input:
+# folder: path to the folder inside svgs folder
+# transcript: iterable with user_exons,domains,db_exons
 def visualize_transcript(folder,transcript):
     pathlib.Path('svgs/{}'.format(folder)).mkdir(parents=True, exist_ok=True)
 
