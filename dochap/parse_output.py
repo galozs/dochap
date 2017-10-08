@@ -7,7 +7,12 @@ import uuid
 import conf
 
 domains_db = 'db/domains.db'
+
 # parse json file into dictionary
+# input:
+# filename: path to the output file of interface.py - must be json file.
+# output:
+# data: dictionary of the json data in the file.
 def parse_output_file(filename):
     with open(filename,'r') as f:
         json_dump = f.read()
@@ -15,11 +20,19 @@ def parse_output_file(filename):
     return data
 
 # parse json string into dictionary
+# input:
+# json_dump: string of json data 
+# output:
+# transcripts_data: the parsed json string data.
 def parse_output(json_dump):
     transcripts_data = {}
     transcripts_data = json.loads(json_dump)
     return transcripts_data
 
+# load all the exons transcript data from the given transcripts names in the user_data
+# input:
+# user_data: dictionary created from the output file by parse_output_file
+# specie: name of the specie from which to take the transcripts
 def load_db_data(user_data,specie):
     print ("loading db exons...")
     bar = progressbar.AnimatedProgressBar(end=len(user_data),width=10)
@@ -33,9 +46,12 @@ def load_db_data(user_data,specie):
         bar.show_progress()
     print("\ndone")
 
+# parses the given output_file and create svgs from it.
 # input:
 # output_file: path to the output file from interface.py
 # specie: specie to visualize
+# output:
+# target_folder: path to the folder containing the new svgs
 def load_and_visualize(output_file,specie):
     data = parse_output_file(output_file)
     load_db_data(data,specie)
@@ -53,7 +69,7 @@ def load_and_visualize(output_file,specie):
 
 
 def main(output_file,specie):
-    data = load_and_visualize(output_file,specie)
+    folder = load_and_visualize(output_file,specie)
 
 if __name__ == '__main__':
     main('mouse_output', 'Mus_musculus')
