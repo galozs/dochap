@@ -33,7 +33,9 @@ def load_db_data(user_data,specie):
         bar.show_progress()
     print("\ndone")
 
-
+# input:
+# output_file: path to the output file from interface.py
+# specie: specie to visualize
 def load_and_visualize(output_file,specie):
     data = parse_output_file(output_file)
     load_db_data(data,specie)
@@ -54,5 +56,5 @@ def main(output_file,specie):
     data = load_and_visualize(output_file,specie)
 
 if __name__ == '__main__':
-    main('output.json', 'Mus_musculus')
+    main('mouse_output', 'Mus_musculus')
 
