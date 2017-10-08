@@ -48,7 +48,7 @@ def draw_transcript(folder,user_exons,domains, db_exons):
         rect:hover ~ text
         { visibility: visible; }
         '''))
-    draw_rect(dwg,(1,0),rel_end,RECT_HEIGHT,text=transcript_id, is_trans=True)
+    draw_rect(dwg,(1,0),rel_end-1,RECT_HEIGHT,text=transcript_id, is_trans=True)
     #dwg.add(dwg.text(text=str(rel_start),insert=(rel_start,RECT_HEIGHT+1+running_height),font_size=20))
     #dwg.add(dwg.text(text=str(rel_end),insert=(rel_end,RECT_HEIGHT+1+running_height),font_size=20))
     running_height += RECT_HEIGHT + SPACING
