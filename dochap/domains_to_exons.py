@@ -109,6 +109,7 @@ def get_exons(result):
         exon['length'] = exon['end'] - exon['start']
         # TODO do actual computation.
         # Take the distance from the start of the cds
+        # TODO - dont do it. instead put the next exon right after the last one.
         exon['relative_start'] = abs(exon['start'] - first_exon_start) + 1
         exon['relative_end'] = exon['relative_start'] + exon['length']
         last_end = exon['relative_end']
@@ -128,7 +129,7 @@ def assignDomainsToExons(transcript_id, domains, specie):
     exons = get_exons(result)
     #print("exons",exons)
     #print("domains",domains)
-    # TODO
+    # TODO relative should be counted without spaces between exons
     # next statement might not be accurate
     # i dont know from what each domain relative location is relative to
     relative_start = 1

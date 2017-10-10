@@ -7,24 +7,10 @@ import ucsc_parser
 import conf
 records = gbk_parser.get_records()
 
-def write_aliases():
-    print("writing aliases.txt")
-    with open("aliases.txt","w") as aliases_file:
-        aliases = set()
-        for record in records:
-            features = [feature for feature in record.features if feature.type == "CDS"]
-            for feature in features:
-                gene_aliases =""
-                gene_name =""
-                if "gene" in feature.qualifiers:
-                    gene_name = feature.qualifiers["gene"][0]
-                if "gene_synonym" in feature.qualifiers:
-                    gene_aliases = feature.qualifiers["gene_synonym"][0]
-                if gene_name:
-                    aliases.add(gene_name + ";" + gene_aliases)
-        for aliase in aliases:
-            aliases_file.write(aliase +"\n")
-
+# creates aliases in specie database file.
+# must have a kgAlias.txt file in the specie database folder.
+# Input:
+# specie: string of the specie (must be one from conf.py)
 def create_better_aliases_db(specie):
     with open('db/{}/kgAlias.txt'.format(specie),'r') as f:
         aliases_lines = f.readlines()
@@ -42,32 +28,7 @@ def create_better_aliases_db(specie):
         cursor.execute("CREATE TABLE aliases (name TEXT, transcript_id TEXT)")
         cursor.executemany('INSERT INTO aliases VALUES(?,?)',zipped)
 
-
-def create_aliases_db():
-    # create database of aliases
-    with open('db/transcript_aliases.txt','r') as f:
-        aliases_lines = f.readlines()
-    values_keys = [tuple(line.replace('\n','').split('\\t')) for line in aliases_lines]
-    zipped = [(key,value) for value,key in values_keys]
-    aliases_dict = dict(zipped)
-    with lite.connect('db/aliases.db') as con:
-        print ("Creating aliases database...")
-        cur = con.cursor()
-        cur.executescript("drop table if exists genes;")
-        cur.execute("CREATE TABLE genes(Id INT, symbol TEXT, aliases TEXT, transcript_id TEXT)")
-        index=0
-        with open("aliases.txt","r") as aliases_file:
-            for gene_aliases in aliases_file.readlines():
-                for alias in gene_aliases.split(";"):
-                    if alias != "" and alias !="\n":
-                        for name in gene_aliases.split(";"):
-                            transcript_id = aliases_dict.get(name,'')
-                            if transcript_id != '':
-                                break
-                        cur.execute("INSERT INTO genes VALUES(?,?,?,?)",(index,alias,gene_aliases,transcript_id))
-                        index +=1
-        print ("Aliases database created")
-
+#
 def create_transcript_data_db(specie):
     print ("Creating transcript data db...")
     with lite.connect(conf.databases[specie]) as con:
