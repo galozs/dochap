@@ -102,6 +102,8 @@ def draw_domains(dwg,domains,running_height):
 def draw_domain(dwg,domain):
     start = int(domain['start'])*3 - 2
     end = int(domain['end']) * 3
+    domain['start'] = start
+    domain['end'] = end
     position = (start,running_height+2*SPACING)
     height = RECT_HEIGHT/2
     width = end-start

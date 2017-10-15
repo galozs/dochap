@@ -40,8 +40,8 @@ def parse_gtf(file_path):
             exon['cds']['length'] = abs(exon['cds']['end'] - exon['cds']['start']) + 1
             # increment relative start location
             if exon['transcript_id'] == transcript_id_prev:
-                # SHOULD BE relative_start = relative_end + ({NEW EXON START} - {LAST EXON START})
-                relative_start = relative_end + 1 + abs(last_exon['end'] - exon['start'])
+                relative_start = relative_end + 1
+                #relative_start = relative_end + 1 + abs(last_exon['end'] - exon['start'])
             # reset relative start location
             else:
                 exons = []
@@ -61,7 +61,6 @@ def parse_gtf(file_path):
 
 
 # compare the domains of user exon and db exon
-# 
 def compare_domains(u_exon,exon):
     if u_exon['start'] == exon['start'] and u_exon['end'] == exon['end']:
                 return 'identical'
@@ -279,8 +278,9 @@ def main():
     to_write = [(name,data) for name,data in transcripts.items() if data]
     with open(output_file,'w') as f:
         f.write(json.dumps(transcripts))
-    # stop here
+    # stop here, writing json dump is easier then creating something else
     return
+    '''
     with open(output_file,'w') as f:
         for name,exons in to_write:
             f.write('{}:\n'.format(name))
@@ -294,7 +294,7 @@ def main():
                 rel_loc = str((e.get('relative_start',None),e.get('relative_end',None)))
                 f.write('index: {} loc: {}, rel_loc: {} states:{} domains: {}\n'.format(e['index'],loc,rel_loc,states,doms))
     print('done')
-
+    '''
 if __name__ == '__main__':
     main()
 

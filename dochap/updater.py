@@ -19,11 +19,18 @@ print ("connecting to ftp.ncbi.nlm.nih.gov...")
 ftp = FTP("ftp.ncbi.nlm.nih.gov")
 print ("logging in...")
 ftp.login()
+prompt = 'Update {} data? (y/N): '
+skipping_prompt = 'Skipping {}'
 for specie in conf.species:
+    user_input = input(prompt.format(specie))
+    if user_input.lower() != 'y':
+        print(skipping_prompt.format(specie))
+        continue
     formatted_extract_path = extract_path.format(specie)
     print ("Creating directory {} ".format(formatted_extract_path))
     pathlib.Path(formatted_extract_path).mkdir(parents=True, exist_ok=True)
     print ("downloading {} data".format(specie))
+    ftp.sendcmd("TYPE i")
     readme_size = ftp.size(readme_file.format(specie))
     readme_progress = progressbar.AnimatedProgressBar(end=readme_size,width=10)
     if os.path.isfile(formatted_extract_path+ "readme_old"):
@@ -72,4 +79,5 @@ print ("starting database upgrade...")
 ftp.quit()
 #print ("EXITING NOW, PLEASE REMOVE ME")
 #sys.exit(2)
-subprocess.call(['./updater.sh'])
+# if the python script calls the updater.sh permission issues may arise
+#subprocess.call(['./updater.sh'])

@@ -95,11 +95,9 @@ def create_comb_db(specie):
             cur.execute("INSERT INTO genebank VALUES(?, ?, ?, ?, ?, ?,  ?, ?,?)",(index,name,db_xref,coded_by,chromosome,strain,cds_comb,sites_comb,region_comb))
             index+=1
 
-
 if __name__ == "__main__":
     for specie in conf.species:
         create_comb_db(specie)
         create_better_aliases_db(specie)
         create_transcript_data_db(specie)
     sys.exit(2)
-    

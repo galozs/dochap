@@ -100,18 +100,18 @@ def get_exons(result):
     starts = result['exon_starts'].split(',')
     ends = result['exon_ends'].split(',')
     first_exon_start = int(starts[0])
-
+    last_end = 0
     for i in range(int(result['exon_count'])):
         exon = {}
         exon['index'] = i
         exon['start'] = int(starts[i])
         exon['end'] = int(ends[i])
-        exon['length'] = exon['end'] - exon['start']
-        # TODO do actual computation.
-        # Take the distance from the start of the cds
-        # TODO - dont do it. instead put the next exon right after the last one.
-        exon['relative_start'] = abs(exon['start'] - first_exon_start) + 1
-        exon['relative_end'] = exon['relative_start'] + exon['length']
+        exon['length'] = abs(exon['end'] - exon['start'])
+        # the exon relative position
+        exon['relative_start'] = last_end + 1
+        exon['relative_end'] = last_end + 1 + exon['length']
+        #exon['relative_start'] = abs(exon['start'] - first_exon_start) + 1
+        #exon['relative_end'] = exon['relative_start'] + exon['length']
         last_end = exon['relative_end']
         exon['transcript_id'] = result['name']
         exons.append(exon)

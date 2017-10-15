@@ -96,10 +96,18 @@ ftp_address = 'hgdownload.soe.ucsc.edu'
 human_aliases = 'goldenPath/hg38/database/kgAlias.txt.gz'
 human_knownGene = 'goldenPath/hg38/database/knownGene.txt.gz'
 
-
+# prompt for user to ask if the user wants to download new tables
+table_prompt = 'Download ucsc {} table for {}? (y/N): '
+skipping_prompt = 'Skipping {} table for {}'
+ask_me_every_time = False
 def get_transcript_data():
     raw_data = []
     for param in [params2]:
+        if ask_me_every_time:
+            user_input = input(table_prompt.format(param['hgta_table'],param['org']))
+            if user_input.lower() != 'y':
+                print (skipping_prompt.format(param['hgta_table'],param['org']))
+                continue
         session = requests.Session()
         print ("Downloading {} table for {} genome...".format(param['hgta_table'],param['org']))
         response = session.post(url, data=param)
@@ -110,13 +118,19 @@ def get_transcript_data():
 def get_transcript_aliases():
     raw_data = []
     for param in [params]:
+        if ask_me_every_time:
+            user_input = input(table_prompt.format(param['hgta_table'],param['org']))
+            if user_input.lower() != 'y':
+                print (skipping_prompt.format(param['hgta_table'],param['org']))
+                continue
         session = requests.Session()
         print ("Downloading {} table for {} genome...".format(param['hgta_table'],param['org']))
         response = session.post(url,data = params)
         raw_data.append((str(response.content),param))
     return raw_data
 
-
+ftp_prompt = 'Download {}? (y/N): '
+ftp_skipping_prompt = 'Skipping {}'
 def download_ftp_data(address,username,password,files):
     print('connecting to: ',address,'...')
     ftp = ftplib.FTP(address)
@@ -124,6 +138,11 @@ def download_ftp_data(address,username,password,files):
     ftp.login(username,password)
     for file in files:
         os.makedirs(os.path.dirname(file[1]),exist_ok=True)
+        if ask_me_every_time:
+            user_input = input(ftp_prompt.format(file[0]))
+            if user_input.lower() != 'y':
+                print (ftp_skipping_prompt.format(file[0]))
+                continue
         print('downloading: ',file[0],'...')
         ftp.sendcmd("TYPE i")
         size = ftp.size(file[0])
@@ -139,7 +158,7 @@ def download_ftp_data(address,username,password,files):
         print()
         print('extracting...')
         gunzip(file[1]+'.gz','-f')
-        # add \ to \t because backward comp
+        # add \ to \t because backward compatability is important
         with open(file[1], 'r') as f:
             content = f.read()
         content.replace('\t','\\t')
@@ -167,6 +186,11 @@ def get_specie_name(specie):
     return species[specie]
 
 def main():
+    user_input = input('request permission for every download/update? (y/N): ')
+    global ask_me_every_time
+    ask_me_every_time = (user_input.lower() == 'y')
+    if ask_me_every_time:
+        print('please choose when needed')
     transcript_data = get_transcript_data()
     transcript_aliases = get_transcript_aliases()
     for alias in transcript_aliases:
@@ -179,7 +203,7 @@ def main():
         write_to_file(data_splitter(data[0]),name)
 
     ftp_files =[(human_aliases,'db/'+species['Human']+'/kgAlias.txt'),(human_knownGene,'db/'+species['Human']+'/knownGene.txt')]
-    download_ftp_data(ftp_address,'anonymous','elbazni@post.bgu.ac.il',ftp_files)
+    download_ftp_data(ftp_address,'anonymous','example@post.bgu.ac.il',ftp_files)
 
 if __name__ == '__main__':
     main()
