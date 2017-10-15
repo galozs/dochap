@@ -6,7 +6,7 @@ if sys.version_info < (3, 5):
 
 setup(
     name='dochap',
-    version='1.0.3.3',
+    version='1.0.4.0',
     author='Nitzan Elbaz',
     author_email='elbazni@post.bgu.ac.il',
     packages = ['dochap'],
