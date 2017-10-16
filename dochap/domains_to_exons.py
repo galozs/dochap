@@ -269,5 +269,8 @@ def main(specie):
     print()
 if __name__ == '__main__':
     for specie in conf.species:
+        user_input = input("Create the {} domains database? (Y/n): ".format(specie))
+        if user_input.lower() == 'n':
+            continue
         main(specie)
 
