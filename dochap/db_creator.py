@@ -30,7 +30,7 @@ def create_better_aliases_db(specie):
 
 #
 def create_transcript_data_db(specie):
-    print ("Creating transcript data db...")
+    print ("Creating transcript database for {}...".format(specie))
     with lite.connect(conf.databases[specie]) as con:
         names = ucsc_parser.parse_knownGene(ucsc_parser.knownGene_path.format(specie))
         cur = con.cursor()
@@ -54,7 +54,7 @@ def create_transcript_data_db(specie):
 
 def create_comb_db(specie):
     with lite.connect(conf.databases[specie]) as con:
-        print("Creating database...")
+        print("Creating database for {}...".format(specie))
         cur = con.cursor()
         cur.execute("drop table if exists genebank;")
         cur.execute("CREATE TABLE genebank(Id INT, symbol TEXT, db_xref TEXT, coded_by TEXT, chromosome TEXT,strain TEXT, cds TEXT, sites TEXT, regions TEXT)")
@@ -100,4 +100,3 @@ if __name__ == "__main__":
         create_comb_db(specie)
         create_better_aliases_db(specie)
         create_transcript_data_db(specie)
-    sys.exit(2)
