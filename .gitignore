@@ -1,4 +1,6 @@
 *.gbk
+*.svg
+*.rst
 *.gz
 *.pyc
 *.swp
