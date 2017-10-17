@@ -3,6 +3,7 @@
 _build/
 build/
 dist/
+dochap.-egg_info/
 *.gtf
 *.rst
 *.gz
