@@ -1,2 +1,6 @@
 *.gbk
 *.gz
+*.pyc
+*.swp
+*.db
+*.txt

@@ -1,4 +1,5 @@
 import os
+import sys
 import json
 import time
 import dill
@@ -14,73 +15,82 @@ comb_db = 'db/comb.db'
 transcripts_db = 'db/transcript_data.db'
 num_threads = 1
 bar = 0
+# TODO test and repair if needed
 # run on all transcripts in transcripts.db
 # for each one find matching alias in alias.db
 # use alias to find sites and regions data in comb.db
-# get all domains of a transcript
-#TODO DOESNT WORK
+# get all domains of all the variants of a given transcript (technicly of it's alias)
 def get_domains(transcript_id, specie):
-    # use better aliases - obselete
-    #alias_db = 'db/better_aliases.db'
     with lite.connect(conf.databases[specie]) as con:
         cursor = con.cursor()
         cursor.execute("SELECT name from aliases WHERE transcript_id = ?",(transcript_id,))
-        #cursor.execute("SELECT aliases from genes WHERE transcript_id = ?",(transcript_id,))
         data = cursor.fetchall()
         if data:
             # create a list of the aliases
             aliases = list(set([tup[0] for tup in data]))
-            #aliases = data[0].split(';')
         else:
             return None
     with lite.connect(conf.databases[specie]) as con:
+        list_of_domains_variants = []
         for alias in aliases:
             cursor = con.cursor()
+            # there might be more then a single occurance of an alias in the genebank.
+            # all occurances must be taken into account.
             cursor.execute("SELECT sites,regions from genebank WHERE symbol = ?",(alias,))
             results = cursor.fetchall()
-            domain_list = []
             #print('result for {} alias {} is:\n{}'.format(transcript_id,alias,results))
             if results:
-                # if counter is 0, domain type is site, if counter is 1, domain type is region
                 domain_types = ['site','region']
-                for counter,domains in enumerate(results[0]):
-                    splitted = domains.split(',')
-                    #print ('splitted: ',splitted)
-                    for result in splitted:
-                        if '[' not in result or ']' not in result:
-                            #print('bad result for {} alias {} result:\n'.format(transcript_id,alias,result))
-                            continue
-                        modified = result.replace(',',':')
-                        part_one = '['.join(modified.split('[')[:-1])
-                        part_two = modified.split('[')[-1].replace(']',':').split(':')
-                        domain = {}
-                        # check that line is not empty
-                        #print ('modified: ',modified)
-                        if not modified[0]:
-                            #print('bad modified for {} alias {} modified:\n'.format(transcript_id,alias,modified))
-                            continue
-                        domain['type'] = domain_types[counter]
-                        domain['name'] = part_one
-                        if len(part_two) < 2:
-                            print ('fucked up on part_two')
-                            print ('result:', result)
-                            print ('part_one: ',part_one)
-                            print ('part_two: ',part_two)
-                            print ('modified: ',modified)
+                for variant_index,variant in enumerate(results):
+                    domain_list = []
+                    # if counter is 0, domain type is site, if counter is 1, domain type is region
+                    for counter,domains in enumerate(variant):
+                        splitted = domains.split(',')
+                        #print ('splitted: ',splitted)
+                        for result in splitted:
+                            if '[' not in result or ']' not in result:
+                                #print('bad result for {} alias {} result:\n'.format(transcript_id,alias,result))
+                                continue
+                            modified = result.replace(',',':')
+                            part_one = '['.join(modified.split('[')[:-1])
+                            part_two = modified.split('[')[-1].replace(']',':').split(':')
+                            domain = {}
+                            # check that line is not empty
+                            #print ('modified: ',modified)
+                            if not modified[0]:
+                                #print('bad modified for {} alias {} modified:\n'.format(transcript_id,alias,modified))
+                                continue
+                            domain['type'] = domain_types[counter]
+                            domain['name'] = part_one
+                            if len(part_two) < 2:
+                                print ('failed on part_two in function get_domains for transcript_id {} alias {}'.format(transcript_id, alias))
+                                print ('result:', result)
+                                print ('part_one: ',part_one)
+                                print ('part_two: ',part_two)
+                                print ('modified: ',modified)
 
-                        domain['start'] = part_two[0]
-                        domain['end'] = part_two[1]
-                        domain['index'] = len(domain_list)
-                        #print ('domain: ', domain)
-                        if not str.isdigit(domain['start']) or not str.isdigit(domain['end']):
-                            #print('bad strings in domain for {} alias {} domain:\n'.format(transcript_id,alias,domain))
-                            continue
-                        domain_list.append(domain)
-                #print('found for {} alias {} doms list:\n{}'.format(transcript_id,alias,domain_list))
-                return domain_list
+                            domain['start'] = part_two[0]
+                            domain['end'] = part_two[1]
+                            domain['index'] = len(domain_list)
+                            #print ('domain: ', domain)
+                            if not str.isdigit(domain['start']) or not str.isdigit(domain['end']):
+                                #print('bad strings in domain for {} alias {} domain:\n'.format(transcript_id,alias,domain))
+                                continue
+                            domain_list.append(domain)
+                    # pack the information about the variant into a dictionary
+                    info = {
+                        'name':alias,
+                        'variant_index':variant_index,
+                        'domains':domain_list
+                    }
+                    list_of_domains_variants.append(info)
+                    #print('found for {} alias {} doms list:\n{}'.format(transcript_id,alias,domain_list))
             else:
                 pass
                 #print('found no sites or regions for {} alias {}'.format(transcript_id,alias))
+
+        print('list_of_domains_variants for {} is: {}'.format(transcript_id,list_of_domains_variants))
+        return list_of_domains_variants
 
 def get_exons_by_transcript_id(transcript_id,specie):
     with lite.connect(conf.databases[specie]) as con:
@@ -118,97 +128,109 @@ def get_exons(result):
     return exons
 
 
-def assignDomainsToExons(transcript_id, domains, specie):
+# input:
+# transcript id: string
+# variants_data: list of dictionary containing name,variant_index,domains
+# specie: string of specie name from conf.py
+# output:
+# exons_variant_list - list of variant with exons data
+def assignDomainsToExons(transcript_id, variants_data, specie):
     # get data about the transcript
-    with lite.connect(conf.databases[specie]) as con:
-        con.row_factory = lite.Row
-        cursor = con.cursor()
-        cursor.execute("SELECT * FROM transcripts WHERE name = ?",(transcript_id,))
-        # currently use the first result only (there shouldnt be more then one)
-        result = cursor.fetchone()
-    exons = get_exons(result)
-    #print("exons",exons)
+        #print("exons",exons)
     #print("domains",domains)
     # TODO relative should be counted without spaces between exons
     # next statement might not be accurate
     # i dont know from what each domain relative location is relative to
-    relative_start = 1
-    relative_stop = 0
-    last_exon = None
-    for exon in exons:
-        # domains indexes will be used as strings
-        # states will be start,end,contains,contained
-        exon['domains_states'] = {}
-        relative_stop = relative_start + exon['length']
-        domains_in_exon = []
-        if domains == None:
-            return
-        for domain in domains:
-            if (not str.isdigit(domain['start'])):
-                print ("FAILED ON {} domain is: {}".format(transcript_id,domain))
-                sys.exit(2)
-            dom_start = int(domain['start']) * 3 - 2
-            dom_stop = int(domain['end']) * 3
-
-            # create ranges of numbers that represents the domain and exon ranges
-            if dom_start < dom_stop:
-                dom_range = range(dom_start,dom_stop+1)
-            else:
-                dom_range = range(dom_stop,dom_start+1)
-
-            exon_range = set(range(relative_start,relative_stop+1))
-            intersection = exon_range.intersection(dom_range)
-
-            dom_start_in_exon = False
-            dom_end_in_exon = False
-
-            if not intersection:
-                # empty, no overlap
+    # domains indexes will be used as strings
+    # states will be start,end,contains,contained
+    # TODO CHANGED AND NOT TESTED - PROBABLY BREAKS
+    if not variants_data:
+        print('variants_data for {} is empty'.format(transcript_id))
+        return None
+    exons_variant_list = []
+    for variant in variants_data:
+        with lite.connect(conf.databases[specie]) as con:
+            con.row_factory = lite.Row
+            cursor = con.cursor()
+            cursor.execute("SELECT * FROM transcripts WHERE name = ?",(transcript_id,))
+            # currently use the first result only (there shouldnt be more then one)
+            result = cursor.fetchone()
+        exons = get_exons(result)
+        relative_start = 1
+        relative_stop = 0
+        last_exon = None
+        for exon in exons:
+            exon['domains_states'] = {}
+            relative_stop = relative_start + exon['length']
+            domains_in_exon = []
+            domains = variant['domains']
+            if domains == None:
+                print('domains is empty')
                 continue
+            for domain in domains:
+                if (not str.isdigit(domain['start'])):
+                    print ("FAILED ON {} domain is: {}".format(transcript_id,domain))
+                    sys.exit(2)
+                dom_start = int(domain['start']) * 3 - 2
+                dom_stop = int(domain['end']) * 3
 
-            if dom_start in intersection:
-                # exon start location in domain
-                # domain is atleast partialy on exon
-                dom_start_in_exon = True
+                # create ranges of numbers that represents the domain and exon ranges
+                if dom_start < dom_stop:
+                    dom_range = range(dom_start,dom_stop+1)
+                else:
+                    dom_range = range(dom_stop,dom_start+1)
 
-            if dom_stop in intersection:
-                # exon end location in domain
-                # domain is atleast partialy on exon
-                dom_end_in_exon = True
+                exon_range = set(range(relative_start,relative_stop+1))
+                intersection = exon_range.intersection(dom_range)
 
-            dom_index = str(domain['index'])
-            if dom_end_in_exon and dom_start_in_exon:
-                # domain fully in exon
-                exon['domains_states'][dom_index] = 'contained'
+                dom_start_in_exon = False
+                dom_end_in_exon = False
+
+                if not intersection:
+                    # empty, no overlap
+                    continue
+
+                if dom_start in intersection:
+                    # exon start location in domain
+                    # domain is atleast partialy on exon
+                    dom_start_in_exon = True
+
+                if dom_stop in intersection:
+                    # exon end location in domain
+                    # domain is atleast partialy on exon
+                    dom_end_in_exon = True
+
+                dom_index = str(domain['index'])
+                if dom_end_in_exon and dom_start_in_exon:
+                    # domain fully in exon
+                    exon['domains_states'][dom_index] = 'contained'
+                    domains_in_exon.append(domain)
+                    continue
+                if dom_start_in_exon:
+                    exon['domains_states'][dom_index] = 'start'
+                    domains_in_exon.append(domain)
+                    continue
+                if dom_end_in_exon:
+                    exon['domains_states'][dom_index] = 'end'
+                    domains_in_exon.append(domain)
+                    continue
+                # there is an intersection but dom_start and dom_end not in it
+                # that means that the domain contains the exon
+                exon['domains_states'][dom_index] = 'contains'
                 domains_in_exon.append(domain)
                 continue
-            if dom_start_in_exon:
-                exon['domains_states'][dom_index] = 'start'
-                domains_in_exon.append(domain)
-                continue
-            if dom_end_in_exon:
-                exon['domains_states'][dom_index] = 'end'
-                domains_in_exon.append(domain)
-                continue
-            # there is an intersection but dom_start and dom_end not in it
-            # that means that the domain contains the exon
-            exon['domains_states'][dom_index] = 'contains'
-            domains_in_exon.append(domain)
-            continue
 
-            #dom_start_in = relative_start <= dom_start and dom_start <= relative_stop
-            #dom_end_in = relative_start <= dom_stop and dom_stop <= relative_stop
-
-            #if dom_start_in or dom_end_in:
-            #    domains_in_exon.append(domain)
-        nums = [domain['index'] for domain in domains_in_exon]
-        exon['domains'] = domains_in_exon
-        relative_start_mod = 0
-        if last_exon:
-            relative_start_mod = abs(exon['start'] - last_exon['end'])
-        relative_start = relative_stop + 1 + relative_start_mod
-        last_exon = exon
-    return exons
+            nums = [domain['index'] for domain in domains_in_exon]
+            exon['domains'] = domains_in_exon
+            relative_start_mod = 0
+            if last_exon:
+                relative_start_mod = abs(exon['start'] - last_exon['end'])
+            relative_start = relative_stop + 1 + relative_start_mod
+            last_exon = exon
+        variant['exons'] = exons
+        exons_variant_list.append(variant)
+    print('exons_variant_list: ',exons_variant_list)
+    return exons_variant_list
 
 def get_bar():
     return bar
@@ -228,8 +250,8 @@ def write_to_db(data,specie):
     with lite.connect(conf.databases[specie]) as con:
         cursor = con.cursor()
         cursor.executescript("drop table if exists domains;")
-        cursor.execute("CREATE TABLE domains(transcript_id TEXT, exon_index INT,domains_states TEXT, domains_list TEXT)")
-        cursor.executemany("INSERT INTO domains VALUES(?,?,?,?)",data)
+        cursor.execute("CREATE TABLE domains(gene_symbol TEXT, transcript_id TEXT, exon_index INT,domains_states TEXT, domains_list TEXT)")
+        cursor.executemany("INSERT INTO domains VALUES(?,?,?,?,?)",data)
 
 
 
@@ -243,7 +265,7 @@ def main(specie):
         # TODO might be a problem here
         cursor.execute("SELECT DISTINCT transcript_id from aliases")
         result = cursor.fetchall()
-    names = [value[0] for value in result]
+    names = [value[0] for value in result][:10]
     print("creating transcript database for {}".format(specie))
     # give this thing a progress bar
     global bar
@@ -257,14 +279,38 @@ def main(specie):
         bar.show_progress()
         time.sleep(1)
     data = list(result.get())
+    print(data)
     # dark magic incoming
     # flatten the list
     # make it a list of tuples of id,index,domainlist
-    data = [(exon['transcript_id'],exon['index'],json.dumps((exon['domains_states'])),json.dumps(exon['domains'])) for exons in data if exons != None for exon in exons if exon != None]
-    #ids = [tup[0] for tup in data]
-    #indexes = [tup[1] for tup in data]
-    #domains = [tup[2] for tup in data]
-    #data = zip(ids,indexes,names)
+    # TODO Change to deal with new variant data coming from assign_and_get 
+    # variant has name,variant_index,domains,exons
+    # TODO maybe no dark magic
+    # TODO check that it is actually runs
+    '''
+    the following dark magic is one line of this:
+    for variants in data:
+        if not variants:
+            continue
+        for variant in variants:
+            if not variant:
+                continue
+            for exon in variant['exons']:
+                if not exon:
+                    continue
+            pass
+    '''
+    data = [
+            ('_'.join([variant['name'],str(variant['variant_index'])]),\
+            exon['transcript_id'],\
+            exon['index'],\
+            json.dumps(exon['domains_states']),\
+            json.dumps(exon['domains'])) \
+            for variants in data if variants != None for variant in variants if variant != None for exon in variant['exons'] if exon!= None
+            ]
+    print('new_data: \n',data)
+    print("well that was fun, now exit")
+    sys.exit(2)
     write_to_db(data,specie)
     print()
 if __name__ == '__main__':
