@@ -1,5 +1,9 @@
 *.gbk
 *.svg
+_build/
+build/
+dist/
+*.gtf
 *.rst
 *.gz
 *.pyc
