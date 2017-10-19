@@ -5,6 +5,7 @@ import sys
 import domains_to_exons
 import sqlite3 as lite
 import conf
+import new_visualizer
 
 transcript_db = 'db/transcript_data.db'
 domains_db = 'db/domains.db'
@@ -189,47 +190,41 @@ def assign_domains_to_exon(exon, domains):
 # need to have atleast transcirpt_id and exons value
 # input:
 # u_transcript_id:  id of the transcript
-# u_exons: list of dictionaries
+# u_exons: list of dictionaries containing user exons data
 # specie: string of the specie (must be one from conf.py)
 # output:
-# u_exons: the exons of the transcript id
-# domains: the domains of the transcript id
+# list_of_variants: list of the variants with exons and domains data
+# exons_variants_list: exons data from the database about all the possible related exons to the user transcript
+# 
 def assign_gtf_domains_to_exons(u_transcript_id, u_exons,specie):
-    domains = domains_to_exons.get_domains(u_transcript_id,specie)
-    #print ('possible domains: ',domains)
+    list_of_variants= domains_to_exons.get_domains(u_transcript_id,specie)
     # check for failure
-    if not domains or not u_exons:
-        return u_exons, domains
+    if not list_of_variants or not u_exons:
+        return u_exons, list_of_variants
     # for each u_exon, check every domain
-    for u_exon in u_exons:
-        assign_domains_to_exon(u_exon,domains)
-    # can now do compare to exons step
+    for variant in list_of_variants:
+        domains = variant['domains']
+        copy_u_exons = list(u_exons)
+        for u_exon in copy_u_exons:
+            assign_domains_to_exon(u_exon,domains)
+        variant['u_exons'] = list(copy_u_exons)
 
-    exons = domains_to_exons.get_exons_by_transcript_id(u_transcript_id,specie)
+    exons_variants_list = domains_to_exons.get_exons_by_transcript_id_adv(u_transcript_id,specie)
     # make sure there are exons
-    if not exons:
-        return u_exons, domains
+    if not exons_variants_list:
+        return None
+    return list_of_variants, exons_variants_list
     # load the exons domains
     # first extract all the domains so they are not extracted everytime
-    if not load_exons_domains(exons,specie):
+    #if not load_exons_domains(exons,specie):
         # no domains for exons at all
-        return u_exons, domains
+        #return u_exons, domains
     #exons_domains = list(map(get_exon_domains,exons,specie))
     #print('exons_doms: {}'.format(exons_domains))
     #for u_exon in u_exons:
         # u_exons[domains] will be a set of strings
         #compare_exons(u_exon,exons)
-    return u_exons, domains
-                # TODO domains assignments should be done in contain maybe
-                # TODO or depend on string result
-                # skip empty exons(no domains inside them)
-                #if not exon_domains:
-                # TODO DONE: COMPARISON IN compare_exons function
-                #continue
-                #u_exon['domains'].update(exon_domains)
-                #print(exon_domains)
-                #print(u_exon['domains'])
-    # exons now have domains data
+
 
 # the interface of dochap.
 # input:
@@ -269,13 +264,22 @@ def main():
     transcripts = parse_gtf(input_file)
     print('assigning domains to exons...')
     bar = progressbar.AnimatedProgressBar(end=len(transcripts),width=10)
+    index = 0
     for transcript_id,exons in transcripts.items():
+        index+=1
+        if index ==20:
+            break
         transcripts[transcript_id] = assign_gtf_domains_to_exons(transcript_id,exons,specie)
+        print('output for {} is \
+                \n0:{} \
+                \n1:{}'.format(transcript_id,transcripts[transcript_id][0],transcripts[transcript_id][1]))
+        print('\n\n')
         bar+=1
         bar.show_progress()
     bar+=1
     bar.show_progress()
-    to_write = [(name,data) for name,data in transcripts.items() if data]
+    new_visualizer.visualize(transcripts)
+    # maybe call visualizer here? instead of writing to json file
     with open(output_file,'w') as f:
         f.write(json.dumps(transcripts))
     # stop here, writing json dump is easier then creating something else

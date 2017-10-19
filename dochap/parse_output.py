@@ -48,13 +48,14 @@ def load_db_data(user_data,specie):
 
 # parses the given output_file and create svgs from it.
 # input:
+# data: 
 # output_file: path to the output file from interface.py
 # specie: specie to visualize
 # output:
 # target_folder: path to the folder containing the new svgs
-def load_and_visualize(output_file,specie):
-    data = parse_output_file(output_file)
-    load_db_data(data,specie)
+def load_and_visualize(data,specie):
+    #data = parse_output_file(output_file)
+    #load_db_data(data,specie)
     target_folder = str(specie) + '/' + str(uuid.uuid4())
     print("creating svgs...")
     bar = progressbar.AnimatedProgressBar(end=len(data),width=10)
