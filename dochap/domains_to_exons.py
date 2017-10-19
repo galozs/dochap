@@ -78,6 +78,7 @@ def get_domains(transcript_id, specie):
                                 continue
                             domain_list.append(domain)
                     # pack the information about the variant into a dictionary
+                    print('variant index: ',variant_index)      
                     info = {
                         'name':alias,
                         'variant_index':variant_index,
@@ -89,7 +90,8 @@ def get_domains(transcript_id, specie):
                 pass
                 #print('found no sites or regions for {} alias {}'.format(transcript_id,alias))
 
-        print('list_of_domains_variants for {} is: {}'.format(transcript_id,list_of_domains_variants))
+        #print('list_of_domains_variants for {} is: {}'.format(transcript_id,list_of_domains_variants))
+        print('number of variants for {} is: {}'.format(transcript_id,len(list_of_domains_variants)))
         return list_of_domains_variants
 
 def get_exons_by_transcript_id(transcript_id,specie):
@@ -145,7 +147,7 @@ def assignDomainsToExons(transcript_id, variants_data, specie):
     # states will be start,end,contains,contained
     # TODO CHANGED AND NOT TESTED - PROBABLY BREAKS
     if not variants_data:
-        print('variants_data for {} is empty'.format(transcript_id))
+        #print('variants_data for {} is empty'.format(transcript_id))
         return None
     exons_variant_list = []
     for variant in variants_data:
@@ -245,27 +247,22 @@ def assign_and_get(specie,name):
 
 def write_to_db(data,specie):
     # write all domains in exons to db
-    # data is build [(id,index,[domains_nums]),...]
-    #print('writing to db/domains.db...')
     with lite.connect(conf.databases[specie]) as con:
         cursor = con.cursor()
         cursor.executescript("drop table if exists domains;")
-        cursor.execute("CREATE TABLE domains(gene_symbol TEXT, transcript_id TEXT, exon_index INT,domains_states TEXT, domains_list TEXT)")
-        cursor.executemany("INSERT INTO domains VALUES(?,?,?,?,?)",data)
+        cursor.execute("CREATE TABLE domains(gene_symbol TEXT,variant_name TEXT, transcript_id TEXT, exon_index INT,exon_rel_start INT, exon_rel_end INT, domains_states TEXT, domains_list TEXT)")
+        cursor.executemany("INSERT INTO domains VALUES(?,?,?,?,?,?,?,?)",data)
 
 
 
 def main(specie):
-    #print(get_domains('uc007aeu.1'))
-    #print(get_domains('uc012gqd.1'))
-    #print(get_domains('uc007afi.2'))
     print("loading {} data...".format(specie))
     with lite.connect(conf.databases[specie]) as con:
         cursor = con.cursor()
-        # TODO might be a problem here
         cursor.execute("SELECT DISTINCT transcript_id from aliases")
         result = cursor.fetchall()
-    names = [value[0] for value in result][:10]
+    # TODO -  remve boundry fr names
+    names = [value[0] for value in result][:100]
     print("creating transcript database for {}".format(specie))
     # give this thing a progress bar
     global bar
@@ -301,16 +298,23 @@ def main(specie):
             pass
     '''
     data = [
-            ('_'.join([variant['name'],str(variant['variant_index'])]),\
+            (
+            variant['name'],
+            '_'.join([variant['name'],str(variant['variant_index'])]),\
             exon['transcript_id'],\
             exon['index'],\
+            exon['relative_start'],\
+            exon['relative_end'],\
             json.dumps(exon['domains_states']),\
-            json.dumps(exon['domains'])) \
-            for variants in data if variants != None for variant in variants if variant != None for exon in variant['exons'] if exon!= None
+            json.dumps(exon['domains'])\
+            ) \
+            for variants in data if variants != None \
+            for variant in variants if variant != None \
+            for exon in variant['exons'] if exon!= None
             ]
     print('new_data: \n',data)
-    print("well that was fun, now exit")
-    sys.exit(2)
+#    print("well that was fun, now exit")
+#    sys.exit(2)
     write_to_db(data,specie)
     print()
 if __name__ == '__main__':
