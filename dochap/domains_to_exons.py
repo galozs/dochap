@@ -78,7 +78,7 @@ def get_domains(transcript_id, specie):
                                 continue
                             domain_list.append(domain)
                     # pack the information about the variant into a dictionary
-                    print('variant index: ',variant_index)      
+                    #print('variant index: ',variant_index)      
                     info = {
                         'name':alias,
                         'variant_index':variant_index,
@@ -91,7 +91,7 @@ def get_domains(transcript_id, specie):
                 #print('found no sites or regions for {} alias {}'.format(transcript_id,alias))
 
         #print('list_of_domains_variants for {} is: {}'.format(transcript_id,list_of_domains_variants))
-        print('number of variants for {} is: {}'.format(transcript_id,len(list_of_domains_variants)))
+        #print('number of variants for {} is: {}'.format(transcript_id,len(list_of_domains_variants)))
         return list_of_domains_variants
 
 def get_exons_by_transcript_id(transcript_id,specie):
@@ -184,7 +184,9 @@ def assignDomainsToExons(transcript_id, variants_data, specie):
 
                 exon_range = set(range(relative_start,relative_stop+1))
                 intersection = exon_range.intersection(dom_range)
-
+                #print('exon info: {} \nexon range: {}\n'.format(exon,range(relative_start,relative_stop+1)))
+                #print('dom info: {}, dom range: {}\n'.format(domain,dom_range))
+                #print('intersection: {}'.format(intersection))
                 dom_start_in_exon = False
                 dom_end_in_exon = False
 
@@ -225,13 +227,13 @@ def assignDomainsToExons(transcript_id, variants_data, specie):
             nums = [domain['index'] for domain in domains_in_exon]
             exon['domains'] = domains_in_exon
             relative_start_mod = 0
-            if last_exon:
-                relative_start_mod = abs(exon['start'] - last_exon['end'])
+            #if last_exon:
+            #    relative_start_mod = abs(exon['start'] - last_exon['end'])
             relative_start = relative_stop + 1 + relative_start_mod
             last_exon = exon
         variant['exons'] = exons
         exons_variant_list.append(variant)
-    print('exons_variant_list: ',exons_variant_list)
+    #print('exons_variant_list: ',exons_variant_list)
     return exons_variant_list
 
 def get_bar():
@@ -262,11 +264,11 @@ def main(specie):
         cursor.execute("SELECT DISTINCT transcript_id from aliases")
         result = cursor.fetchall()
     # TODO -  remve boundry fr names
-    names = [value[0] for value in result][:100]
+    names = [value[0] for value in result][:1000]
     print("creating transcript database for {}".format(specie))
     # give this thing a progress bar
     global bar
-    bar = progressbar.AnimatedProgressBar(end=len(names),width=10)
+    bar = progressbar.AnimatedProgressBar(end=len(names)+1,width=10)
     pool = ThreadingPool(num_threads)
     assign_and_get_with_specie = partial(assign_and_get, specie)
     result = pool.amap(assign_and_get_with_specie,names)
@@ -276,7 +278,7 @@ def main(specie):
         bar.show_progress()
         time.sleep(1)
     data = list(result.get())
-    print(data)
+    #print(data)
     # dark magic incoming
     # flatten the list
     # make it a list of tuples of id,index,domainlist
