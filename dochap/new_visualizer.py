@@ -1,7 +1,10 @@
 import os
 import svgwrite
 from svgwrite import cm,mm,rgb
-from draw_utils import create_drawing, add_style, add_line, add_rect
+from draw_utils import create_drawing, add_style, add_line, add_rect, normalized_dwg
+
+
+LINE_HEIGHT = 40
 
 # input:
 # transcripts: dictionary of tuples of user data and db data
@@ -26,16 +29,24 @@ def create_svgs(transcript_id,user_variants,db_exons_variants):
 
 def draw_user_graphs(user_variants):
     for index, variant in enumerate(user_variants):
+        print('variant is:', variant)
         if 'u_exons' not in variant:
             continue
+
         exons = variant['u_exons']
         domains = variant['domains']
-        dwg = create_drawing()
+        dwg = NormalizedDwg()
         name = variant['name']
         dwg.filename = 'testing/variant_{}_{}.svg'.format(name,index)
-        start = (exons[0]['relative_start'] + 40, 40)
-        end = (exons[-1]['relative_end'] + 40,40)
+        start = (exons[0]['relative_start'] + 40, LINE_HEIGHT)
+        end = (exons[-1]['relative_end'] + 40,LINE_HEIGHT)
+        dwg.a_length = end[0]-start[0]
         add_line(dwg,start,end)
+        for exon in variant['u_exons']:
+            position= exon['relative_start']+40,LINE_HEIGHT*2
+            length = exon['relative_end'] - exon['relative_start']
+            size = length,LINE_HEIGHT
+            add_rect(dwg,position,size)
         dwg.save()
     # for every variant:
     # draw line with numbers
