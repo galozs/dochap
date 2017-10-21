@@ -1,13 +1,13 @@
 import os
 import svgwrite
 from svgwrite import cm,mm,rgb
-from draw_utils import create_drawing, add_style, add_line, add_rect 
+from draw_utils import create_drawing, add_style, add_line, add_rect,add_text
 
 
 LINE_HEIGHT = 40
 style = '''
         text
-        { visibility: hidden;   pointer-events: none;}
+        { visibility: visualize;   pointer-events: none;}
         #shown
         { visibility: visible; }
         rect:hover
@@ -23,12 +23,10 @@ def visualize(transcripts):
     index= 0
     for transcript_id,data in transcripts.items():
         index+=1
-        if index ==20:
-            break
         if not data:
             continue
         list_of_variants, exons_in_database = data
-        print('visualize {}'.format(transcript_id))
+        #print('visualize {}'.format(transcript_id))
         create_svgs(transcript_id, list_of_variants, exons_in_database)
 
 
@@ -43,27 +41,56 @@ def create_svgs(transcript_id,user_variants,db_exons_variants):
 def draw_user_graphs(user_variants):
     """
     """
+    dwgs = []
     for index, variant in enumerate(user_variants):
-        print('variant is:', variant)
         if 'u_exons' not in variant:
-            continue
+            break 
 
         exons = variant['u_exons']
         domains = variant['domains']
         dwg = create_drawing()
         add_style(dwg,style)
         name = variant['name']
+        print('visualize',name)
         dwg.filename = 'testing/variant_{}_{}.svg'.format(name,index)
         start = (exons[0]['relative_start'] , LINE_HEIGHT)
         size = (exons[-1]['relative_end'] ,0)
         dwg.a_length = size[0]
         add_line(dwg,start,size)
         for exon in variant['u_exons']:
-            position= exon['relative_start'],LINE_HEIGHT*2
+            position= exon['relative_start'],LINE_HEIGHT*3
             length = exon['relative_end'] - exon['relative_start']
             size = length,LINE_HEIGHT
             add_rect(dwg,position,size)
+        add_text(dwg,'exons',(dwg.a_length,position[1]+LINE_HEIGHT/2))
+        for domain in domains:
+            start = int(domain['start']) * 3 - 2
+            end = int(domain['end']) * 3
+            position = start,LINE_HEIGHT*2
+            length = end-start
+            size = length,LINE_HEIGHT
+            add_rect(dwg,position,size,'green','tooltip')
+        add_text(dwg,'domains',(dwg.a_length,position[1]+LINE_HEIGHT/2))
+        dwgs.append(dwg)
         dwg.save()
+    if dwgs != []:
+        return dwgs
+    # draw exons without domains from db
+    dwg = create_drawing()
+    dwg.filename = user_variants[0]['transcript_id']
+    dwg.a_length = int(user_variants[-1]['end'])
+    start = (1,LINE_HEIGHT)
+    size = (dwg.a_length,0)
+    add_line(dwg,start,size)
+    for exon in user_variants:
+        start = int(exon['start'])
+        end = int(exon['end'])
+        position = start,LINE_HEIGHT*3
+        size = end,0
+        add_rect(dwg,position,size)
+    print('saving',dwg.filename)
+    dwg.save()
+        # draw exon
     # for every variant:
     # draw line with numbers
     # draw domains under the line

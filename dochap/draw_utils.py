@@ -4,13 +4,14 @@ import svgwrite
 
 class NormalizedDwg(svgwrite.Drawing):
     """
+    An svg drawing with normalization values
     """
     a_length = 1
     nor_length = 400
 
 def create_drawing(size = ('100%','100%'),a_len=1):
     """
-     create an svg drawing
+     create a NormalizedDwg
      input:
      size: size in %, must be a string.
      output:
@@ -49,6 +50,20 @@ def add_line(dwg,position,size):
     line = dwg.add(dwg.line(start=position,end=end,stroke=svgwrite.rgb(10, 10, 16, '%')))
     return line
 
+
+def add_text(dwg,text, position,font_size = 20):
+    """
+    Add a text to the dwg
+
+    Input:
+        dwg - NormalizedDwg
+        text - string
+        position - Tuple(x,y)
+        font_size - Int, font size of the text - defaults to 20
+    """
+    text = dwg.add((dwg.text(text=text,insert=normalize(dwg,position),font_size=font_size)))
+    return text
+
 def normalize(dwg,size):
     """
     Normalize the given size according to the values in dwg.
@@ -60,19 +75,21 @@ def normalize(dwg,size):
     size=(size[0]/dwg.a_length)*dwg.nor_length,size[1]
     return size
 
-def add_rect(dwg, position, size):
+def add_rect(dwg, position, size,color='blue',tooltip=""):
     """
      add a rect to a drawing
      input:
-     dwg: svg drawing
-     position: start position -tuple (x,y)
-     size: size of the rect tuple (width, height )
+         dwg: svg drawing
+         position: start position -tuple (x,y)
+         size: size of the rect tuple (width, height )
+         color: color string/rgb for the rect. default to blue.
      output:
-     rect: reference to the rect created.
+         rect: reference to the rect created.
     """
 
 
-    rect = dwg.add(dwg.rect(insert=normalize(dwg,position),size = normalize(dwg,size)))
+    rect = dwg.add(dwg.rect(insert=normalize(dwg,position),size = normalize(dwg,size),fill=color))
+    rect.set_desc(tooltip)
     return rect
 
 def main():

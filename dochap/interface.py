@@ -285,19 +285,20 @@ def main():
     index = 0
     for transcript_id,exons in transcripts.items():
         index+=1
-        if index ==20:
+        if index ==200:
             break
         transcripts[transcript_id] = assign_gtf_domains_to_exons(transcript_id,exons,specie)
-        print('output for {} is \
-                \n0:{} \
-                \n1:{}'.format(transcript_id,transcripts[transcript_id][0],transcripts[transcript_id][1]))
-        print('\n\n')
+        #print('output for {} is \
+        #        \n0:{} \
+        #        \n1:{}'.format(transcript_id,transcripts[transcript_id][0],transcripts[transcript_id][1]))
+        #print('\n\n')
         bar+=1
         bar.show_progress()
     bar+=1
     bar.show_progress()
     new_visualizer.visualize(transcripts)
     # maybe call visualizer here? instead of writing to json file
+    print('writing transcripts to file...')
     with open(output_file,'w') as f:
         f.write(json.dumps(transcripts))
     # stop here, writing json dump is easier then creating something else
