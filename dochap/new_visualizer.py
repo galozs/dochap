@@ -25,7 +25,12 @@ def visualize(transcripts):
         index+=1
         if not data:
             continue
-        list_of_variants, exons_in_database = data
+        try:
+            list_of_variants, exons_in_database = data
+        except:
+            print('failed!')
+            print('data: ',data)
+            continue
         #print('visualize {}'.format(transcript_id))
         create_svgs(transcript_id, list_of_variants, exons_in_database)
 
@@ -77,7 +82,7 @@ def draw_user_graphs(user_variants):
         return dwgs
     # draw exons without domains from db
     dwg = create_drawing()
-    dwg.filename = user_variants[0]['transcript_id']
+    dwg.filename = 'testing/'+user_variants[0]['transcript_id']+'.svg'
     dwg.a_length = int(user_variants[-1]['end'])
     start = (1,LINE_HEIGHT)
     size = (dwg.a_length,0)
