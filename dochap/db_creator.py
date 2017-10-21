@@ -7,11 +7,14 @@ import ucsc_parser
 import conf
 records = gbk_parser.get_records()
 
-# creates aliases in specie database file.
-# must have a kgAlias.txt file in the specie database folder.
-# Input:
-# specie: string of the specie (must be one from conf.py)
 def create_better_aliases_db(specie):
+    """
+     creates aliases in specie database file.
+
+     Requiers a kgAlias.txt file in the specie database folder.
+     Input:
+         specie: string of the specie (must be one from conf.py)
+    """
     with open('db/{}/kgAlias.txt'.format(specie),'r') as f:
         aliases_lines = f.readlines()
 
@@ -28,8 +31,13 @@ def create_better_aliases_db(specie):
         cursor.execute("CREATE TABLE aliases (name TEXT, transcript_id TEXT)")
         cursor.executemany('INSERT INTO aliases VALUES(?,?)',zipped)
 
-#
 def create_transcript_data_db(specie):
+    """
+    Create a transcripts table in the specie database and fills with ucsc transcripts data
+
+    Input:
+        specie: string of the specie (must be one from conf.py)
+    """
     print ("Creating transcript database for {}...".format(specie))
     with lite.connect(conf.databases[specie]) as con:
         names = ucsc_parser.parse_knownGene(ucsc_parser.knownGene_path.format(specie))
@@ -53,6 +61,12 @@ def create_transcript_data_db(specie):
             cur.execute("INSERT INTO transcripts VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",values)
 
 def create_comb_db(specie):
+    """
+    Create a genebank table in the specie database and fills it with data.
+
+    Input:
+        specie: string of the specie (must be one from conf.py)
+    """
     with lite.connect(conf.databases[specie]) as con:
         print("Creating database for {}...".format(specie))
         cur = con.cursor()

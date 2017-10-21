@@ -2,9 +2,11 @@ import os
 import conf
 
 knownGene_path = 'db/{}/knownGene.txt'
-# parse a given knownGene table from ucsc
-# returns a nice dictionary
 def parse_knownGene(path):
+    """
+     parse a given knownGene table from ucsc
+     returns a nice dictionary
+    """
     # find file
     with open(path,'r') as f:
         lines = f.readlines()

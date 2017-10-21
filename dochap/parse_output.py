@@ -8,32 +8,38 @@ import conf
 
 domains_db = 'db/domains.db'
 
-# parse json file into dictionary
-# input:
-# filename: path to the output file of interface.py - must be json file.
-# output:
-# data: dictionary of the json data in the file.
 def parse_output_file(filename):
+    """
+     parse json file into dictionary
+     input:
+     filename: path to the output file of interface.py - must be json file.
+     output:
+     data: dictionary of the json data in the file.
+    """
     with open(filename,'r') as f:
         json_dump = f.read()
         data = parse_output(json_dump)
     return data
 
-# parse json string into dictionary
-# input:
-# json_dump: string of json data 
-# output:
-# transcripts_data: the parsed json string data.
 def parse_output(json_dump):
+    """
+     parse json string into dictionary
+     input:
+     json_dump: string of json data 
+     output:
+     transcripts_data: the parsed json string data.
+    """
     transcripts_data = {}
     transcripts_data = json.loads(json_dump)
     return transcripts_data
 
-# load all the exons transcript data from the given transcripts names in the user_data
-# input:
-# user_data: dictionary created from the output file by parse_output_file
-# specie: name of the specie from which to take the transcripts
 def load_db_data(user_data,specie):
+    """
+     load all the exons transcript data from the given transcripts names in the user_data
+     input:
+     user_data: dictionary created from the output file by parse_output_file
+     specie: name of the specie from which to take the transcripts
+    """
     print ("loading db exons...")
     bar = progressbar.AnimatedProgressBar(end=len(user_data),width=10)
     bar +=1
@@ -46,14 +52,16 @@ def load_db_data(user_data,specie):
         bar.show_progress()
     print("\ndone")
 
-# parses the given output_file and create svgs from it.
-# input:
-# data: 
-# output_file: path to the output file from interface.py
-# specie: specie to visualize
-# output:
-# target_folder: path to the folder containing the new svgs
 def load_and_visualize(data,specie):
+    """
+     parses the given output_file and create svgs from it.
+     input:
+     data: 
+     output_file: path to the output file from interface.py
+     specie: specie to visualize
+     output:
+     target_folder: path to the folder containing the new svgs
+    """
     #data = parse_output_file(output_file)
     #load_db_data(data,specie)
     target_folder = str(specie) + '/' + str(uuid.uuid4())

@@ -10,10 +10,12 @@ import new_visualizer
 transcript_db = 'db/transcript_data.db'
 domains_db = 'db/domains.db'
 
-# RELATIVE CALCULATIONS ARE PROBABLY WRONG
-# MIGHT NEED TO GO BY TOTAL POSTITIONS OR
-# FIND A WAY TO HAVE CORRECT RELATIVE POSTITIONS
 def parse_gtf(file_path):
+    """
+    # RELATIVE CALCULATIONS ARE PROBABLY WRONG
+    # MIGHT NEED TO GO BY TOTAL POSTITIONS OR
+    # FIND A WAY TO HAVE CORRECT RELATIVE POSTITIONS
+    """
     with open(file_path) as f:
         lines = f.readlines()    # dictionary of exons by transcript_id
     transcripts = {}
@@ -61,8 +63,10 @@ def parse_gtf(file_path):
     return transcripts
 
 
-# compare the domains of user exon and db exon
 def compare_domains(u_exon,exon):
+    """
+     compare the domains of user exon and db exon
+    """
     if u_exon['start'] == exon['start'] and u_exon['end'] == exon['end']:
                 return 'identical'
     if u_exon['domains_states'] == exon['domains_states']:
@@ -70,20 +74,23 @@ def compare_domains(u_exon,exon):
                 return 'domains match'
         return 'domains_states match'
     return 'different'
-
-# check how u_exon compares to the database exons
 def compare_exons(u_exon,exons):
+    """
+     check how u_exon compares to the database exons
+    """
     # TODO - decide what should be the compare function
     u_exon['relations'] = []
     for exon in exons:
         u_exon['relations'].append(compare_domains(u_exon,exon))
 
 
-# returns the domains associated with a given exon index and transcript id 
-# input:
-# exon: dict with transcript_id and index
-# specie: string of the specie (must be one from conf.py)
 def get_exon_domains(exon,specie):
+    """
+     returns the domains associated with a given exon index and transcript id 
+     input:
+     exon: dict with transcript_id and index
+     specie: string of the specie (must be one from conf.py)
+    """
     with lite.connect(conf.databases[specie]) as con:
         cursor = con.cursor()
         cursor.execute("SELECT domains_list from domains WHERE transcript_id = ? AND exon_index = ?",(exon['transcript_id'],exon['index']))
@@ -93,12 +100,14 @@ def get_exon_domains(exon,specie):
     doms = result[0].split(',')
     return doms
 
-# parse the given exons json string
-# input:
-# exons: list of dictionaries that contains json dump of domains and domains_states
-# output:
-# exons: list of dictionaris that contains domains and domains_states
 def parse_exon_domains_to_dict(exons):
+    """
+     parse the given exons json string
+     input:
+     exons: list of dictionaries that contains json dump of domains and domains_states
+     output:
+     exons: list of dictionaris that contains domains and domains_states
+    """
     for exon in exons:
         domains_string = exon['domains']#.replace("'",'"')
         domains_states_string = exon['domains_states']#.replace("'",'"')
@@ -112,14 +121,16 @@ def parse_exon_domains_to_dict(exons):
             sys.exit(2)
     return exons
 
-# call when exons list need to load domains info from domains table
-# input:
-# exons: list of dictionaries that will be populated with json strings from the database
-# specie: string of the specie (must be one from conf.py)
-# output:
-# True if loaded anything
-# None if didn't load anything
 def load_exons_domains(exons,specie):
+    """
+     call when exons list need to load domains info from domains table
+     input:
+     exons: list of dictionaries that will be populated with json strings from the database
+     specie: string of the specie (must be one from conf.py)
+     output:
+     True if loaded anything
+     None if didn't load anything
+    """
     transcript_id = exons[0]['transcript_id']
     indexes = set([str(exon['index']) for exon in exons])
     # conncet do domains db
@@ -141,15 +152,17 @@ def load_exons_domains(exons,specie):
     return True
 
 
-# TODO if comparison method is changed - update this method.
-# usage: call to fill exon with domain data
-# input:
-# exon: dictionary of exon data
-# domains: list of domains (dictionaries)
-# output:
-# the exon's key domains_states will be a list of states (index will reference the domain's index)
-# possible values: 'contained','start','end','contained'.
 def assign_domains_to_exon(exon, domains):
+    """
+     TODO if comparison method is changed - update this method.
+     usage: call to fill exon with domain data
+     input:
+     exon: dictionary of exon data
+     domains: list of domains (dictionaries)
+     output:
+     the exon's key domains_states will be a list of states (index will reference the domain's index)
+     possible values: 'contained','start','end','contained'.
+    """
     domains_in_exon = []
     exon['domains_states'] = {}
     for domain in domains:
@@ -185,18 +198,19 @@ def assign_domains_to_exon(exon, domains):
         continue
     exon['domains'] = domains_in_exon
 
-# usage: call when need to know what domains an exon contains
-# takes transcript_data of user gtf file (cut up to dict)
-# need to have atleast transcirpt_id and exons value
-# input:
-# u_transcript_id:  id of the transcript
-# u_exons: list of dictionaries containing user exons data
-# specie: string of the specie (must be one from conf.py)
-# output:
-# list_of_variants: list of the variants with exons and domains data
-# exons_variants_list: exons data from the database about all the possible related exons to the user transcript
-# 
 def assign_gtf_domains_to_exons(u_transcript_id, u_exons,specie):
+    """
+     usage: call when need to know what domains an exon contains
+     takes transcript_data of user gtf file (cut up to dict)
+     need to have atleast transcirpt_id and exons value
+     input:
+     u_transcript_id:  id of the transcript
+     u_exons: list of dictionaries containing user exons data
+     specie: string of the specie (must be one from conf.py)
+     output:
+     list_of_variants: list of the variants with exons and domains data
+     exons_variants_list: exons data from the database about all the possible related exons to the user transcript
+    """
     list_of_variants= domains_to_exons.get_domains(u_transcript_id,specie)
     # check for failure
     if not list_of_variants or not u_exons:
@@ -226,14 +240,16 @@ def assign_gtf_domains_to_exons(u_transcript_id, u_exons,specie):
         #compare_exons(u_exon,exons)
 
 
-# the interface of dochap.
-# input:
-# input_file: path to input file
-# output_file: path to the output file
-# specie: string of the specie (must be one from conf.py)
-# output:
-# output_file: the path to the output file
 def interface(input_file,output_file,specie):
+    """
+     the interface of dochap.
+     input:
+     input_file: path to input file
+     output_file: path to the output file
+     specie: string of the specie (must be one from conf.py)
+     output:
+     output_file: the path to the output file
+    """
     print('parsing {}...'.format(input_file))
     transcripts = parse_gtf(input_file)
     print('assigning domains to exons...')
@@ -251,9 +267,11 @@ def interface(input_file,output_file,specie):
     return output_file
 
 
-# takes argv
-# usage - will be printed upon calling the script
 def main():
+    """
+     takes argv
+     usage - will be printed upon calling the script
+    """
     if len(sys.argv) < 4:
         print('inteface.py <specie> <inputfile> <outputfile>')
         sys.exit(2)

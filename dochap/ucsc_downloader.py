@@ -91,16 +91,18 @@ humans_gene_table = {
         'hgta_compressType':'none',
         'hgta_doTopSubmit':'get output'
 }
-# ftp addresses for human data from ucsc
+""" ftp addresses for human data from ucsc """
 ftp_address = 'hgdownload.soe.ucsc.edu'
 human_aliases = 'goldenPath/hg38/database/kgAlias.txt.gz'
 human_knownGene = 'goldenPath/hg38/database/knownGene.txt.gz'
 
-# prompt for user to ask if the user wants to download new tables
+"""prompt for user to ask if the user wants to download new tables"""
 table_prompt = 'Download ucsc {} table for {}? (y/N): '
 skipping_prompt = 'Skipping {} table for {}'
 ask_me_every_time = False
 def get_transcript_data():
+    """
+    """
     raw_data = []
     for param in [params2]:
         if ask_me_every_time:
@@ -116,6 +118,8 @@ def get_transcript_data():
 
 
 def get_transcript_aliases():
+    """
+    """
     raw_data = []
     for param in [params]:
         if ask_me_every_time:
@@ -132,6 +136,8 @@ def get_transcript_aliases():
 ftp_prompt = 'Download {}? (y/N): '
 ftp_skipping_prompt = 'Skipping {}'
 def download_ftp_data(address,username,password,files):
+    """
+    """
     print('connecting to: ',address,'...')
     ftp = ftplib.FTP(address)
     print('logging in...')
@@ -167,6 +173,8 @@ def download_ftp_data(address,username,password,files):
         print('done')
 
 def data_splitter(raw_data):
+    """
+    """
     lines = raw_data.split('\\n')
     # remove first and last elements, as they are not needed
     del lines[0]
@@ -177,15 +185,21 @@ def data_splitter(raw_data):
 
 
 def write_to_file(data,path):
+    """
+    """
     os.makedirs(os.path.dirname(path),exist_ok=True)
     print ("Writing {}...".format(path))
     with open(path, 'w') as f:
         f.writelines(data)
 
 def get_specie_name(specie):
+    """
+    """
     return species[specie]
 
 def main():
+    """
+    """
     user_input = input('request permission for every download/update? (y/N): ')
     global ask_me_every_time
     ask_me_every_time = (user_input.lower() == 'y')

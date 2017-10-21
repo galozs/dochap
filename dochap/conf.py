@@ -1,6 +1,7 @@
-# supported species names
+"""supported species names"""
 species = ['Homo_sapiens','Mus_musculus']
-# converting Names to database locations
+
+"""converting Names to database locations"""
 databases = {
     'Human':'db/Homo_sapiens.db',
     'Homo_sapiens':'db/Homo_sapiens.db',

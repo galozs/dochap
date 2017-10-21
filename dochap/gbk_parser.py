@@ -7,14 +7,23 @@ from Bio import SeqIO
 import progressbar
 import conf
 from functools import partial
-# get all sequence records from the gbk file
+
+
+
 gbk_file = "db/{}/protein.gbk"
+
+
 def get_records():
+    """
+     get all sequence records from the gbk file
+    """
     records = {specie:parse_proteins(specie) for specie in conf.species}
     return records
 
-#records = [record for record in SeqIO.parse(gbk_file,"genbank")]
 def parse_proteins(specie):
+    """
+    records = [record for record in SeqIO.parse(gbk_file,"genbank")]
+    """
     print ("parsing protein.gbk of {}".format(specie))
     records=[]
     # length as of 2016 of mouse
@@ -28,23 +37,26 @@ def parse_proteins(specie):
     print()
     print("done")
     return records
-
 def write_annotations(specie):
+    """
+    """
     print ("writing annotation.txt")
     with open("annotation.txt","w") as annotations_file:
         for record in records[specie]:
             annotations_file.write(str(record))
 
-
 def write_cds(specie):
+    """
+    """
     print ("writing cds.txt")
     with open("cds.txt","w") as cds_file:
         for record in records[specie]:
             features = [feature for feature in record.features if feature.type == "CDS"]
             for feature in features:
                 cds_file.write(str(feature))
-
 def write_sites(specie):
+    """
+    """
     print("writing sites.txt")
     with open("sites.txt","w") as sites_file:
         for record in records[specie]:
@@ -52,16 +64,18 @@ def write_sites(specie):
             for feature in features:
                 sites_file.write(str(feature))
                 # can take begin@end@name maybe
-
 def write_regions(specie):
+    """
+    """
     print("writing regions.txt")
     with open("regions.txt","w") as regions_file:
         for record in records[specie]:
             features = [feature for feature in record.features if feature.type == "Region"]
             for feature in features:
                 regions_file.write(str(feature))
-
 def write_aliases(specie):
+    """
+    """
     print("writing aliases.txt")
     with open("aliases.txt","w") as aliases_file:
         aliases = set()

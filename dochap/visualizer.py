@@ -14,10 +14,12 @@ def set_width(value):
 
 RECT_HEIGHT=40
 SPACING = 20
-# input:
-# folder: path to the folder inside svgs folder
-# transcript: iterable with user_exons,domains,db_exons
 def visualize_transcript(folder,transcript):
+    """
+     input:
+     folder: path to the folder inside svgs folder
+     transcript: iterable with user_exons,domains,db_exons
+    """
     pathlib.Path('svgs/{}'.format(folder)).mkdir(parents=True, exist_ok=True)
 
     user_exons = transcript[0]
@@ -26,6 +28,9 @@ def visualize_transcript(folder,transcript):
     draw_transcript(folder,user_exons,domains,db_exons)
 
 def draw_transcript(folder,user_exons,domains, db_exons):
+    """
+    """
+
     running_height = 0
     if not user_exons:
         print('no user exons')
@@ -61,12 +66,16 @@ def draw_transcript(folder,user_exons,domains, db_exons):
 
 
 def normalize(value):
+    """
+    """
     if max_width == 0:
         print("failed to normalize")
         return value
     return value/max_width * 400
 
 def draw_rect(dwg,position,width,height,fill_color='red',stroke_color='black',text=None,is_trans=False,tooltip_text = None):
+    """
+    """
     start_txt = str(position[0])
     end_txt = str(position[0] + width)
     width = normalize(width)
@@ -92,6 +101,8 @@ def draw_rect(dwg,position,width,height,fill_color='red',stroke_color='black',te
     #print (start_txt,' ',end_txt)
 
 def draw_domains(dwg,domains,running_height):
+    """
+    """
     if not domains:
         dwg.add(dwg.text("no domains",(0,50)))
         return
@@ -101,6 +112,8 @@ def draw_domains(dwg,domains,running_height):
     running_height += SPACING*3
 
 def draw_domain(dwg,domain):
+    """
+    """
     start = int(domain['start'])*3 - 2
     end = int(domain['end']) * 3
     domain['start'] = start
@@ -113,6 +126,8 @@ def draw_domain(dwg,domain):
     #g.add(dwg.text(text=str(domain),insert=domain_data_pos,font_size=14))
 
 def draw_user_exons(dwg,exons,running_height):
+    """
+    """
     exons_g = dwg.add(dwg.g(id='exons',font_size=14))
     if not exons:
         exons_g.add(dwg.text("no exons",(0,100)))
@@ -122,6 +137,8 @@ def draw_user_exons(dwg,exons,running_height):
     running_height += SPACING*3
 
 def draw_db_exons(dwg,exons,running_height):
+    """
+    """
     exons_g = dwg.add(dwg.g(id='db_exons',font_size=14))
     if not exons:
         exons_g.add(dwg.text("no db_exons",(0,100)))
@@ -133,6 +150,8 @@ def draw_db_exons(dwg,exons,running_height):
 
 
 def draw_exon(dwg,exon,running_height,color=None):
+    """
+    """
     if not color:
         color = 'green'
     start = int(exon['relative_start'])

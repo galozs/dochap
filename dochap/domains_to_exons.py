@@ -16,11 +16,13 @@ transcripts_db = 'db/transcript_data.db'
 num_threads = 1
 bar = 0
 # TODO test and repair if needed
-# run on all transcripts in transcripts.db
-# for each one find matching alias in alias.db
-# use alias to find sites and regions data in comb.db
-# get all domains of all the variants of a given transcript (technicly of it's alias)
 def get_domains(transcript_id, specie):
+    """
+     run on all transcripts in transcripts.db
+     for each one find matching alias in alias.db
+     use alias to find sites and regions data in comb.db
+     get all domains of all the variants of a given transcript (technicly of it's alias)
+    """
     with lite.connect(conf.databases[specie]) as con:
         cursor = con.cursor()
         cursor.execute("SELECT name from aliases WHERE transcript_id = ?",(transcript_id,))
@@ -94,12 +96,14 @@ def get_domains(transcript_id, specie):
         #print('number of variants for {} is: {}'.format(transcript_id,len(list_of_domains_variants)))
         return list_of_domains_variants
 
-# input:
-# transcript_id: string 
-# specie: string of the specie (must be one from conf.py)
-# output:
-# list_of_exons_variants: list of dictionaries with exons variants, origin_id, and alias.
 def get_exons_by_transcript_id_adv(transcript_id,specie):
+    """
+     input:
+     transcript_id: string 
+     specie: string of the specie (must be one from conf.py)
+     output:
+     list_of_exons_variants: list of dictionaries with exons variants, origin_id, and alias.
+    """
     with lite.connect(conf.databases[specie]) as con:
         cursor = con.cursor()
         cursor.execute("SELECT name from aliases WHERE transcript_id = ?",(transcript_id,))
@@ -130,13 +134,15 @@ def get_exons_by_transcript_id_adv(transcript_id,specie):
                 #print(exons_variants_data)
         #print('list of exons variants for {} : {}'.format(transcript_id,list_of_exons_variants))
         return list_of_exons_variants
-# order the query result into a dictionary by transcript_id
-# and then by variant_name
-# input:
-# query_result: list of exons data from domains db.
-# output:
-# transcripts_dict: dictionary of transcripts variants with exons data.
 def order_in_variants(query_result):
+    """
+     order the query result into a dictionary by transcript_id
+     and then by variant_name
+     input:
+     query_result: list of exons data from domains db.
+     output:
+     transcripts_dict: dictionary of transcripts variants with exons data.
+    """
     transcripts_dict = {}
     # by transscript
     for result in query_result:
@@ -150,8 +156,10 @@ def order_in_variants(query_result):
             trans_dict[variant_name] = []
         trans_dict[variant_name].append(dict(result))
     return transcripts_dict
-
 def get_exons_by_transcript_id(transcript_id,specie):
+    """
+
+    """
     with lite.connect(conf.databases[specie]) as con:
         con.row_factory = lite.Row
         cursor = con.cursor()
@@ -160,8 +168,10 @@ def get_exons_by_transcript_id(transcript_id,specie):
         result = cursor.fetchone()
     exons = get_exons(result)
     return exons
-
 def get_exons(result):
+    """
+
+    """
     if not result:
         #print('nothing in result')
         return
@@ -187,13 +197,15 @@ def get_exons(result):
     return exons
 
 
-# input:
-# transcript id: string
-# variants_data: list of dictionary containing name,variant_index,domains
-# specie: string of specie name from conf.py
-# output:
-# exons_variant_list - list of variant with exons data
 def assignDomainsToExons(transcript_id, variants_data, specie):
+    """
+     input:
+     transcript id: string
+     variants_data: list of dictionary containing name,variant_index,domains
+     specie: string of specie name from conf.py
+     output:
+     exons_variant_list - list of variant with exons data
+    """
     # get data about the transcript
         #print("exons",exons)
     #print("domains",domains)

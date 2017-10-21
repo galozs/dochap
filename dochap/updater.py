@@ -1,6 +1,8 @@
-# ADD NEW DATA FROM UCSC, AND FIND WAY TO AUTO DOWNLOAD AND CHECK FOR UPDATE FOR IT
-# NEED TABLE OF ALIASES FROM TRANSCRIPT_ID TO GENE_NAME
-# NEED TABLE OF TRANSCRIPT DATA LIKE EXONS LOCATIONS, AND CDS LOCATIONS WE NEED
+"""
+ ADD NEW DATA FROM UCSC, AND FIND WAY TO AUTO DOWNLOAD AND CHECK FOR UPDATE FOR IT
+ NEED TABLE OF ALIASES FROM TRANSCRIPT_ID TO GENE_NAME
+ NEED TABLE OF TRANSCRIPT DATA LIKE EXONS LOCATIONS, AND CDS LOCATIONS WE NEED
+"""
 from ftplib import FTP
 import tarfile
 import sys
@@ -12,7 +14,7 @@ import conf
 from sh import gunzip
 prot_path = "genomes/{}/protein/protein.gbk.gz"
 filename = "protein.gbk.gz"
-# species is Homo_sapiens, Mus_musculus
+""" species is Homo_sapiens, Mus_musculus """
 extract_path = "db/{}/"
 readme_file = 'genomes/{}/README_CURRENT_RELEASE'
 print ("connecting to ftp.ncbi.nlm.nih.gov...")
@@ -77,7 +79,3 @@ for specie in conf.species:
     os.rename(formatted_extract_path+"readme_new", formatted_extract_path+"readme_old")
 print ("starting database upgrade...")
 ftp.quit()
-#print ("EXITING NOW, PLEASE REMOVE ME")
-#sys.exit(2)
-# if the python script calls the updater.sh permission issues may arise
-#subprocess.call(['./updater.sh'])
