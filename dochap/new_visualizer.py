@@ -30,7 +30,9 @@ def visualize(transcripts):
         except:
             print('failed!')
             print('data: ',data)
-            continue
+            list_of_variants = data
+            exons_in_database = None
+            #continue
         #print('visualize {}'.format(transcript_id))
         create_svgs(transcript_id, list_of_variants, exons_in_database)
 
@@ -49,8 +51,7 @@ def draw_user_graphs(user_variants):
     dwgs = []
     for index, variant in enumerate(user_variants):
         if 'u_exons' not in variant:
-            break 
-
+            break
         exons = variant['u_exons']
         domains = variant['domains']
         dwg = create_drawing()
@@ -80,18 +81,25 @@ def draw_user_graphs(user_variants):
         dwg.save()
     if dwgs != []:
         return dwgs
+    print('breaked')
+    print('user_variants:',user_variants)
     # draw exons without domains from db
     dwg = create_drawing()
-    dwg.filename = 'testing/'+user_variants[0]['transcript_id']+'.svg'
-    dwg.a_length = int(user_variants[-1]['end'])
+    try:
+        dwg.filename = 'testing/'+user_variants[0]['transcript_id']+'.svg'
+    except:
+        user_variants = [user_variants]
+        dwg.filename = 'testing/'+user_variants[0]['transcript_id']+'.svg'
+        print('failed finding user_variants[0]:',user_variants)
+    dwg.a_length = int(user_variants[-1]['relative_end'])
     start = (1,LINE_HEIGHT)
     size = (dwg.a_length,0)
     add_line(dwg,start,size)
     for exon in user_variants:
-        start = int(exon['start'])
-        end = int(exon['end'])
+        start = int(exon['relative_start'])
+        end = int(exon['relative_end'])
         position = start,LINE_HEIGHT*3
-        size = end,0
+        size = end-start,LINE_HEIGHT
         add_rect(dwg,position,size)
     print('saving',dwg.filename)
     dwg.save()
