@@ -34,7 +34,7 @@ def add_style(dwg,style):
     dwg.defs.add(dwg.style(style))
     return dwg
 
-def add_line(dwg,position,size):
+def add_line(dwg,position,size,numbered=False):
     """
      add a line to a drawing
      input:
@@ -45,9 +45,14 @@ def add_line(dwg,position,size):
      line: reference to the line created.
     """
     # normalize size
-    size = (size[0]/dwg.a_length)*dwg.nor_length,size[1]
-    end = position[0]+size[0],position[1]+size[1]
-    line = dwg.add(dwg.line(start=position,end=end,stroke=svgwrite.rgb(10, 10, 16, '%')))
+    nor_size = (size[0]/dwg.a_length)*dwg.nor_length,size[1]
+    end = position[0]+nor_size[0],position[1]+nor_size[1]
+    line = dwg.add(dwg.line(start=normalize(dwg,position),end=end,stroke=svgwrite.rgb(10, 10, 16, '%')))
+    if numbered:
+        # text at the end of the line
+        add_text(dwg,str(size[0]),(position[0]+size[0],position[1]))
+        # text at the beginning of the line
+        add_text(dwg,str(position[0]),position)
     return line
 
 

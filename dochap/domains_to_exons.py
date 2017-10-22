@@ -99,7 +99,7 @@ def get_domains(transcript_id, specie):
 def get_exons_by_transcript_id_adv(transcript_id,specie):
     """
      input:
-     transcript_id: string 
+     transcript_id: string
      specie: string of the specie (must be one from conf.py)
      output:
      list_of_exons_variants: list of dictionaries with exons variants, origin_id, and alias.
