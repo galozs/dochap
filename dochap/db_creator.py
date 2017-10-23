@@ -104,7 +104,7 @@ def create_comb_db(specie):
             sites_comb = ','.join(sites)
             region_comb = ','.join(regions)
             cds_comb = ','.join(cds)
-            if sites_comb == '' and region_comb == '':
+            if sites_comb == '' and region_comb == '' and cds_comb == '':
                 continue
             cur.execute("INSERT INTO genebank VALUES(?, ?, ?, ?, ?, ?,  ?, ?,?)",(index,name,db_xref,coded_by,chromosome,strain,cds_comb,sites_comb,region_comb))
             index+=1

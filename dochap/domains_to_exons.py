@@ -333,7 +333,7 @@ def main(specie):
         cursor.execute("SELECT DISTINCT transcript_id from aliases")
         result = cursor.fetchall()
     # TODO -  remve boundry fr names
-    names = [value[0] for value in result][:1000]
+    names = [value[0] for value in result]
     print("creating transcript database for {}".format(specie))
     # give this thing a progress bar
     global bar

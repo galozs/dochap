@@ -282,11 +282,7 @@ def main():
     transcripts = parse_gtf(input_file)
     print('assigning domains to exons...')
     bar = progressbar.AnimatedProgressBar(end=len(transcripts),width=10)
-    index = 0
     for transcript_id,exons in transcripts.items():
-        index+=1
-        if index ==200:
-            break
         transcripts[transcript_id] = assign_gtf_domains_to_exons(transcript_id,exons,specie)
         #print('output for {} is \
         #        \n0:{} \
