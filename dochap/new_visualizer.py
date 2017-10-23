@@ -123,19 +123,63 @@ def draw_db_graphs(db_exons_variants):
     """
     """
     if db_exons_variants:
-        try:
-            prefix = db_exons_variants[0]['origin_id']
-            print (prefix)
-        except:
-            print(db_exons_variants)
-            input()
+        prefix = 'testing/variant_'+db_exons_variants[0]['alias']+'/db_'
+    if not db_exons_variants:
+        print('no db_exons_variants')
+        return
+    for variant_index,variant in enumerate(db_exons_variants):
+        for trans_id,variant_dict in variant['exons_variants_data'].items():
+            for gene_name,exons in variant_dict.items():
+                dwg = create_drawing()
+                dwg.filename = prefix + '{}_{}.svg'.format(variant['alias'],variant_index)
+                position = exons[0]['exon_rel_start'],LINE_HEIGHT
+                size = exons[-1]['exon_rel_end'],0
+                dwg.a_length = size[0]
+                add_line(dwg,position,size,True)
+                domains = extract_domains(exons)
+                print('domains are: ',domains)
+                input()
+                for domain in domains:
+                    start = int(domain['start']) * 3 - 2
+                    end = int(domain['end']) * 3
+                    position = start,LINE_HEIGHT*2
+                    size = end-start,LINE_HEIGHT
+                    add_rect(dwg,position,size,tooltip=str(domain))
 
-    #
+                for exon in exons:
+                    start = exon['exon_rel_start']
+                    end = exon['exon_rel_end']
+                    position = start,LINE_HEIGHT * 3
+                    size = end-start,LINE_HEIGHT
+                    add_rect(dwg,position,size,tooltip=str(exon))
+                print('saving db data:',dwg.filename)
+                input()
+                dwg.save()
     # for every variant:
     # draw line with numbers
     # draw domains under the line
     # draw exons under the domains
-    pass
+
+
+
+def extract_domains(exons):
+    """
+    extract a list of unique domains from a bunch of exons
+
+    input:
+        exons: list of exons (dictionaries)
+    """
+    domains = []
+    for exon in exons:
+        for domain in exon['domains_list']:
+            domains.append(domain)
+    # NEED TO JSON LOAD SHIT
+    print(domains)
+    print()
+    domains = list(set(domains))
+    print('doms are:',domains)
+    input()
+    return domains
 
 def set_links(user_graphs,db_graphs):
     """
