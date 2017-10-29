@@ -2,9 +2,7 @@ import os
 import json
 import progressbar
 import sys
-import domains_to_exons
-import sqlite3 as lite
-import conf
+import domains_to_exons import sqlite3 as lite import conf
 import new_visualizer
 
 transcript_db = 'db/transcript_data.db'
@@ -44,7 +42,6 @@ def parse_gtf(file_path):
             # increment relative start location
             if exon['transcript_id'] == transcript_id_prev:
                 relative_start = relative_end + 1
-                #relative_start = relative_end + 1 + abs(last_exon['end'] - exon['start'])
             # reset relative start location
             else:
                 exons = []
@@ -53,11 +50,10 @@ def parse_gtf(file_path):
             relative_end = relative_start + exon['cds']['length']
             exon['relative_start'] = relative_start
             exon['relative_end'] = relative_end
-            last_exon = exon
             transcript_id_prev = exon['transcript_id']
             gene_id_prev = exon['gene_id']
             exons.append(exon)
-            transcripts[exon['transcript_id']] = exons
+            transcripts[exon['transcript_id']] = {'exons':exons}
         # maybe remove first element of transcripts
     # maybe not
     return transcripts
@@ -228,43 +224,84 @@ def assign_gtf_domains_to_exons(u_transcript_id, u_exons,specie):
     if not exons_variants_list:
         return None
     return list_of_variants, exons_variants_list
-    # load the exons domains
-    # first extract all the domains so they are not extracted everytime
-    #if not load_exons_domains(exons,specie):
-        # no domains for exons at all
-        #return u_exons, domains
-    #exons_domains = list(map(get_exon_domains,exons,specie))
-    #print('exons_doms: {}'.format(exons_domains))
-    #for u_exon in u_exons:
-        # u_exons[domains] will be a set of strings
-        #compare_exons(u_exon,exons)
 
+def get_domains_in_transcript(transcript_id,specie):
+    """
+    get all domains variations in a given transcript.
 
-def interface(input_file,output_file,specie):
+    input:
+        transcript_id: string
+        specie: string of the specie (must be one from conf.py)
+    output:
+        dictionary: keys are aliases of the transcript_id, values are lists of domains
+    """
+    # query aliases table to get aliases for transcript_id
+    domain_types = ['site','region']
+    with lite.connect(conf.databases[specie]) as con:
+        cursor = con.cursor()
+        cursor.execute("SELECT name FROM aliases WHERE transcript_id = ?",(transcript_id,))
+        aliases = list(set([tup[0] for tup in cursor.fetchall()]))
+        alias_domains_dict = {}
+        for alias in aliases:
+            cursor.execute("SELECT regions,sites FROM genebank WHERE symbol = ?",(alias,))
+            results = cursor.fetchall()
+            variants = []
+            for variant in results:
+                domain_list = []
+                # if counter is 0, domain type is site, if counter is 1, domain type is region
+                for counter,domains in enumerate(variant):
+                    splitted = domains.split(',')
+                    #print ('splitted: ',splitted)
+                    for result in splitted:
+                        if '[' not in result or ']' not in result:
+                            continue
+                        modified = result.replace(',',':')
+                        part_one = '['.join(modified.split('[')[:-1])
+                        part_two = modified.split('[')[-1].replace(']',':').split(':')
+                        domain = {}
+                        # check that line is not empty
+                        if not modified[0]:
+                            continue
+                        domain['type'] = domain_types[counter]
+                        domain['name'] = part_one
+                        if len(part_two) < 2:
+                            print('fail part_two')
+                            continue
+                        domain['start'] = part_two[0]
+                        domain['end'] = part_two[1]
+                        domain['index'] = len(domain_list)
+                        # check that domain start and end are numbers
+                        if not str.isdigit(domain['start']) or not str.isdigit(domain['end']):
+                            continue
+                        domain_list.append(domain)
+               if domains_list:
+                   variants.append(domains_list)
+
+            if variants:
+                alias_domains_dict[alias] = variants
+
+        return alias_domains_dict
+
+def interface(input_file,specie):
     """
      the interface of dochap.
      input:
-     input_file: path to input file
-     output_file: path to the output file
-     specie: string of the specie (must be one from conf.py)
-     output:
-     output_file: the path to the output file
+         input_file: path to input file
+         specie: string of the specie (must be one from conf.py)
     """
     print('parsing {}...'.format(input_file))
     transcripts = parse_gtf(input_file)
     print('assigning domains to exons...')
     bar = progressbar.AnimatedProgressBar(end=len(transcripts),width=10)
-    for transcript_id,exons in transcripts.items():
-        transcripts[transcript_id] = assign_gtf_domains_to_exons(transcript_id,exons,specie)
+    for transcript_id in transcripts:
+        transcripts[transcript_id]['domains'] = get_domains_in_transcript(transcript_id,specie)
         bar+=1
         bar.show_progress()
     bar+=1
     bar.show_progress()
     to_write = [(name,data) for name,data in transcripts.items() if data]
-    with open(output_file,'w') as f:
-        f.write(json.dumps(transcripts))
+    new_visualizer.visualize(transcripts)
     # stop here
-    return output_file
 
 
 def main():
@@ -272,48 +309,14 @@ def main():
      takes argv
      usage - will be printed upon calling the script
     """
-    if len(sys.argv) < 4:
-        print('inteface.py <specie> <inputfile> <outputfile>')
+    if len(sys.argv) < 3:
+        print('inteface.py <specie> <inputfile>')
         sys.exit(2)
     specie = sys.argv[1]
     input_file = sys.argv[2]
-    output_file = sys.argv[3]
-    print('parsing {}...'.format(input_file))
-    transcripts = parse_gtf(input_file)
-    print('assigning domains to exons...')
-    bar = progressbar.AnimatedProgressBar(end=len(transcripts),width=10)
-    for transcript_id,exons in transcripts.items():
-        transcripts[transcript_id] = assign_gtf_domains_to_exons(transcript_id,exons,specie)
-        #print('output for {} is \
-        #        \n0:{} \
-        #        \n1:{}'.format(transcript_id,transcripts[transcript_id][0],transcripts[transcript_id][1]))
-        #print('\n\n')
-        bar+=1
-        bar.show_progress()
-    bar+=1
-    bar.show_progress()
-    new_visualizer.visualize(transcripts)
-    # maybe call visualizer here? instead of writing to json file
-    print('writing transcripts to file...')
-    with open(output_file,'w') as f:
-        f.write(json.dumps(transcripts))
-    # stop here, writing json dump is easier then creating something else
+    interface(input_file,specie)
     return
-    '''
-    with open(output_file,'w') as f:
-        for name,exons in to_write:
-            f.write('{}:\n'.format(name))
-            if not exons:
-                f.write('None\n')
-                continue
-            for e in exons:
-                doms = str(e.get('domains','[]'))
-                states = str(e.get('domains_states','{}'))
-                loc = str((e.get('start',None),e.get('end',None)))
-                rel_loc = str((e.get('relative_start',None),e.get('relative_end',None)))
-                f.write('index: {} loc: {}, rel_loc: {} states:{} domains: {}\n'.format(e['index'],loc,rel_loc,states,doms))
-    print('done')
-    '''
+
 if __name__ == '__main__':
     main()
 

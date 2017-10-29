@@ -16,35 +16,31 @@ style = '''
         rect:hover ~ text
         { visibility: visible; }
         '''
-def visualize(transcripts):
+def visualize(transcripts,specie):
     """
      input:
-     transcripts: dictionary of tuples of user data and db data
+     transcripts: dictionary - keys are transcripts id, values are dictionaries with keys exons,domains
     """
-    index= 0
-    for transcript_id,data in transcripts.items():
-        index+=1
-        if not data:
+    for transcript_id,transcript_data in transcripts.items():
+        if not transcipt_data:
+            print('no transcript data for ',transcript_id)
             continue
-        if isinstance(data,tuple):
-            if len(data) == 2:
-               list_of_variants, exons_in_database = data
-        elif isinstance(data,list):
-            print('is a list!')
-            list_of_variants = data
-            exons_in_database = None
-        else:
-            try:
-                list_of_variants, exons_in_database = data
-            except:
-                print('failed!')
-                print('data: ',data)
-                list_of_variants = data
-                exons_in_database = None
-            #continue
-        #print('visualize {}'.format(transcript_id))
-        create_svgs(transcript_id, list_of_variants, exons_in_database)
+        user_exons = transcript_data['exons']
+        db_domains = transcript_data['domains']
+        db_exons = get_db_data(transcript_id,specie)
 
+        create_svgs(transcript_id,user_exons,db_exons,db_domains)
+
+def get_db_data(transcript_id,specie):
+    """
+    get the exons data from the database,
+    of all the transcripts asocciated with the given transcript id aliases.
+
+    input:
+        transcript_id - string
+        specie: string of the specie (must be one from conf.py)
+    """
+    pass
 
 def create_svgs(transcript_id,user_variants,db_exons_variants):
     """
