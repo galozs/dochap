@@ -225,6 +225,40 @@ def assign_gtf_domains_to_exons(u_transcript_id, u_exons,specie):
         return None
     return list_of_variants, exons_variants_list
 
+def get_db_data(transcript_id,specie):
+    """
+    Get all exons of variations of a given transcript.
+
+    input:
+        transcript_id: string
+        specie: string of the specie (must be one from conf.py)
+    output:
+        dictionary: keys are transcript_ids of the relevent transcripts, values are list exons
+    """
+    # query aliases table to get aliases for the transcript_id.
+    with lite.connect(conf.databases[specie]) as con:
+        cursor = con.cursor()
+        cursor.execute("SELECT name FROM aliases WHERE transcript_id = ?",(transcript_id,))
+        aliases = list(set([tup[0] for tup in cursor.fetchall()]))
+        if not aliases:
+            print('transcript_id {} no in aliases table'.format(transcript_id))
+            return None
+        # for each alias, query aliases again and get all distinct transcript_id's.
+        unique_ids = set()
+        for alias in aliases:
+            cursor = con.cursor()
+            cursor.execute("SELECT transcript_id FROM aliases WHERE name = ?",(alias,))
+            transcripts_ids = set([tup[0] for tup in cursor.fetchall()])
+            unique_ids = unique_ids.union(transcripts_ids)
+        # for each transcript_id, get the transcript exons list
+        db_exons_data = {}
+        for unique_id in unique_ids:
+            exons = domains_to_exons.get_exons_by_transcript_id(unique_id,specie)
+            if exons:
+                db_exons_data[unique_id] = exons
+
+        return db_exons_data
+
 def get_domains_in_transcript(transcript_id,specie):
     """
     get all domains variations in a given transcript.
@@ -236,6 +270,7 @@ def get_domains_in_transcript(transcript_id,specie):
         dictionary: keys are aliases of the transcript_id, values are lists of domains
     """
     # query aliases table to get aliases for transcript_id
+    # TODO also deal with situation where transcript_id is actually a name and not transcript_id
     domain_types = ['site','region']
     with lite.connect(conf.databases[specie]) as con:
         cursor = con.cursor()
@@ -274,8 +309,8 @@ def get_domains_in_transcript(transcript_id,specie):
                         if not str.isdigit(domain['start']) or not str.isdigit(domain['end']):
                             continue
                         domain_list.append(domain)
-               if domains_list:
-                   variants.append(domains_list)
+               if domain_list:
+                   variants.append(domain_list)
 
             if variants:
                 alias_domains_dict[alias] = variants
@@ -295,11 +330,11 @@ def interface(input_file,specie):
     bar = progressbar.AnimatedProgressBar(end=len(transcripts),width=10)
     for transcript_id in transcripts:
         transcripts[transcript_id]['domains'] = get_domains_in_transcript(transcript_id,specie)
+        transcripts[transcript_id]['db_data'] = get_db_data(transcript_id,specie)
         bar+=1
         bar.show_progress()
     bar+=1
     bar.show_progress()
-    to_write = [(name,data) for name,data in transcripts.items() if data]
     new_visualizer.visualize(transcripts)
     # stop here
 
