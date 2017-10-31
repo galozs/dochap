@@ -158,7 +158,13 @@ def order_in_variants(query_result):
     return transcripts_dict
 def get_exons_by_transcript_id(transcript_id,specie):
     """
+    Get exons data from the transcripts table
 
+    Input:
+        transcript_id: string of transcript_id
+        specie: string of the specie (must be one from conf.py)
+    Output:
+        exons: list of exons data if exist in the database. otherwise returns None.
     """
     with lite.connect(conf.databases[specie]) as con:
         con.row_factory = lite.Row
@@ -168,9 +174,15 @@ def get_exons_by_transcript_id(transcript_id,specie):
         result = cursor.fetchone()
     exons = get_exons(result)
     return exons
+
 def get_exons(result):
     """
+    Parse the result of get_exons_by_transcript_id into a list of exons.
 
+    Input:
+        result - dictionary
+    OutputL
+        exons - list of exons
     """
     if not result:
         #print('nothing in result')
