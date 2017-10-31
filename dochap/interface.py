@@ -2,7 +2,9 @@ import os
 import json
 import progressbar
 import sys
-import domains_to_exons import sqlite3 as lite import conf
+import domains_to_exons
+import sqlite3 as lite
+import conf
 import new_visualizer
 
 transcript_db = 'db/transcript_data.db'
@@ -235,13 +237,14 @@ def get_db_data(transcript_id,specie):
     output:
         dictionary: keys are transcript_ids of the relevent transcripts, values are list exons
     """
+    query_transcript_id = transcript_id.split('.')[0]
     # query aliases table to get aliases for the transcript_id.
     with lite.connect(conf.databases[specie]) as con:
         cursor = con.cursor()
-        cursor.execute("SELECT name FROM aliases WHERE transcript_id = ?",(transcript_id,))
+        cursor.execute("SELECT name FROM aliases WHERE transcript_id LIKE ?",(query_transcript_id+'%',))
         aliases = list(set([tup[0] for tup in cursor.fetchall()]))
         if not aliases:
-            print('transcript_id {} no in aliases table'.format(transcript_id))
+            #print('transcript_id no ids like {} in aliases table'.format(query_transcript_id))
             return None
         # for each alias, query aliases again and get all distinct transcript_id's.
         unique_ids = set()
@@ -257,6 +260,7 @@ def get_db_data(transcript_id,specie):
             if exons:
                 db_exons_data[unique_id] = exons
 
+        #print('db_exons_data: ',db_exons_data)
         return db_exons_data
 
 def get_domains_in_transcript(transcript_id,specie):
@@ -271,10 +275,11 @@ def get_domains_in_transcript(transcript_id,specie):
     """
     # query aliases table to get aliases for transcript_id
     # TODO also deal with situation where transcript_id is actually a name and not transcript_id
+    query_transcript_id = transcript_id.split('.')[0]
     domain_types = ['site','region']
     with lite.connect(conf.databases[specie]) as con:
         cursor = con.cursor()
-        cursor.execute("SELECT name FROM aliases WHERE transcript_id = ?",(transcript_id,))
+        cursor.execute("SELECT name FROM aliases WHERE transcript_id LIKE ?",(query_transcript_id+'%',))
         aliases = list(set([tup[0] for tup in cursor.fetchall()]))
         alias_domains_dict = {}
         for alias in aliases:
@@ -309,12 +314,13 @@ def get_domains_in_transcript(transcript_id,specie):
                         if not str.isdigit(domain['start']) or not str.isdigit(domain['end']):
                             continue
                         domain_list.append(domain)
-               if domain_list:
-                   variants.append(domain_list)
+                if domain_list:
+                    variants.append(domain_list)
 
             if variants:
                 alias_domains_dict[alias] = variants
 
+        #print('alias_domains_dict: ',alias_domains_dict)
         return alias_domains_dict
 
 def interface(input_file,specie):
@@ -330,7 +336,7 @@ def interface(input_file,specie):
     bar = progressbar.AnimatedProgressBar(end=len(transcripts),width=10)
     for transcript_id in transcripts:
         transcripts[transcript_id]['domains'] = get_domains_in_transcript(transcript_id,specie)
-        transcripts[transcript_id]['db_data'] = get_db_data(transcript_id,specie)
+        transcripts[transcript_id]['db_exons'] = get_db_data(transcript_id,specie)
         bar+=1
         bar.show_progress()
     bar+=1
